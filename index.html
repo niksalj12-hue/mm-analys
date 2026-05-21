@@ -355,12 +355,15 @@ async function runAnalysis(){
   loader(true,'Hämtar angränsande kvarter…');
   status('Hämtar kvarter från OpenStreetMap…');
 
-  // Use a tight buffer (just 15m) to find truly adjacent buildings
-  const tightBuf=15;
+  // Expand work polygon bbox by ~20m to catch adjacent buildings
+  const wBounds = workPolygon.getBounds();
+  const padDeg = 0.0003; // ~20m in degrees
+  const sBbox = `${wBounds.getSouth()-padDeg},${wBounds.getWest()-padDeg},${wBounds.getNorth()+padDeg},${wBounds.getEast()+padDeg}`;
+
   const innerQuery=`[out:json][timeout:25];
   (
-    way[building](around:${tightBuf},${pts.map(p=>p.lat+','+p.lng).join(' ')});
-    way[landuse~"residential|commercial|retail|industrial|mixed"](around:${tightBuf},${pts.map(p=>p.lat+','+p.lng).join(' ')});
+    way[building](${sBbox});
+    way[landuse~"residential|commercial|retail|industrial|mixed"](${sBbox});
   );
   out geom;`;
 
@@ -369,23 +372,28 @@ async function runAnalysis(){
   catch(e){loader(false);status('Fel vid hämtning av kvarter.');return;}
 
   let innerCount=0;
+  const wB = workPolygon.getBounds().pad(0.0002);
   if(innerData.elements){
     innerData.elements.forEach(el=>{
       if(!el.geometry||el.geometry.length<3)return;
       const latlngs=el.geometry.map(n=>[n.lat,n.lon]);
+      // Only show buildings whose bbox overlaps the (slightly padded) work polygon bbox
+      const elBounds = L.latLngBounds(latlngs);
+      if(!wB.intersects(elBounds))return;
       const tags=el.tags||{};
-      const label=tags.name||tags['addr:street']||(tags.landuse?'Landuse: '+tags.landuse:tags.building?'Byggnad':null)||'';
+      const label=tags.name||tags['addr:street']||(tags.landuse&&tags.landuse!='yes'?tags.landuse:null)||(tags.building&&tags.building!='yes'?tags.building:null)||'Byggnad';
       const poly=L.polygon(latlngs,{
-        color:'var(--inner-c)',
+        color:'#1d4ed8',
         weight:1.5,
         fillColor:'rgba(29,78,216,0.18)',
         fillOpacity:1,
-      }).bindPopup(`<b>${label||'Angränsande byggnad'}</b><br><span style="font-size:11px;color:#6b6962">Inre zon – direkt påverkan</span>`);
+      }).bindPopup('<b>'+label+'</b><br><span style="font-size:11px;color:#6b6962">Inre zon – direkt påverkan</span>');
       poly.addTo(map);
       autoLayers.push(poly);
       innerCount++;
     });
   }
+  console.log('Inner zone features:', innerCount);
 
   // ── OUTER ZONE: road-network convex hull ──────────────────────────────────
   loader(true,'Hämtar vägnät för yttre zon…');
@@ -397,7 +405,9 @@ async function runAnalysis(){
 
   let outerData;
   try{outerData=await overpassPost(outerQuery);}
-  catch(e){loader(false);status('Fel vid hämtning av vägnät.');return;}
+  catch(e){console.error('Outer zone error',e);loader(false);status('Fel vid hämtning av vägnät.');return;}
+
+  console.log('Outer road elements:', outerData.elements ? outerData.elements.length : 0);
 
   const roadPoints=[];
   if(outerData.elements){
@@ -409,14 +419,18 @@ async function runAnalysis(){
       });
     });
   }
+  console.log('Road points collected:', roadPoints.length);
   if(roadPoints.length>3){
     const hull=convexHull(roadPoints);
+    console.log('Hull points:', hull.length);
     const outerPoly=L.polygon(hull,{
       color:'#c2410c',weight:2.5,
       fillColor:'rgba(194,65,12,0.10)',
       fillOpacity:1,dashArray:'10,6'
-    }).addTo(map).bindPopup(`<b>Yttre påverkanszon</b><br>Nätverksbuffert ${outerDist}m<br><span style="font-size:11px;color:#6b6962">Indirekt påverkan</span>`);
+    }).addTo(map).bindPopup('<b>Yttre påverkanszon</b><br>Nätverksbuffert '+outerDist+'m<br><span style="font-size:11px;color:#6b6962">Indirekt påverkan</span>');
     autoLayers.push(outerPoly);
+  } else {
+    console.warn('Not enough road points for hull:', roadPoints.length);
   }
 
   // Bring work polygon and inner to front
