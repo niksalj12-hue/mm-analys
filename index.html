@@ -127,7 +127,13 @@ aside{width:248px;min-width:248px;background:var(--surface);border-right:1px sol
       <div class="stitle">3. Zoninställningar</div>
       <div style="margin-bottom:10px">
         <div style="font-size:11px;font-weight:600;color:var(--inner-c);margin-bottom:5px">INRE ZON – angränsande kvarter</div>
-        <p class="hint" style="margin-top:0;margin-bottom:6px">Byggnader och tomter som tangerar eller ligger omedelbart intill arbetsområdet.</p>
+        <div class="slider-row">
+          <label>Räckvidd</label>
+          <input type="range" min="10" max="150" value="50" step="5" id="innerDist"
+            oninput="updateInnerLabel()"/>
+          <span id="innerDistVal">50m</span>
+        </div>
+        <div class="dist-context" id="innerContext">≈ direkt angränsande</div>
       </div>
       <div>
         <div style="font-size:11px;font-weight:600;color:var(--outer-c);margin-bottom:5px">YTTRE ZON – nätverksbuffert</div>
@@ -266,6 +272,18 @@ function convexHull(points){
   return[...lower,...upper].map(p=>[p.y,p.x]);
 }
 
+// ── INNER/OUTER LABELS ────────────────────────────────────────────────────────
+function updateInnerLabel(){
+  const v=parseInt(document.getElementById('innerDist').value);
+  document.getElementById('innerDistVal').textContent=v+'m';
+  let ctx='';
+  if(v<=20)ctx='Direkt angränsande byggnader';
+  else if(v<=50)ctx='Närmaste kvarter';
+  else if(v<=100)ctx='2–3 kvarter runt arbetsytan';
+  else ctx='Bred inre påverkanszon';
+  document.getElementById('innerContext').textContent=ctx;
+}
+
 // ── OUTER LABEL ───────────────────────────────────────────────────────────────
 function updateOuterLabel(){
   const v=parseInt(document.getElementById('outerDist').value);
@@ -355,31 +373,27 @@ async function runAnalysis(){
   loader(true,'Hämtar angränsande kvarter…');
   status('Hämtar kvarter från OpenStreetMap…');
 
-  // Expand work polygon bbox by ~20m to catch adjacent buildings
+  const innerDist = parseInt(document.getElementById('innerDist').value);
+  // Expand work polygon bbox by innerDist
   const wBounds = workPolygon.getBounds();
-  const padDeg = 0.0003; // ~20m in degrees
-  const sBbox = `${wBounds.getSouth()-padDeg},${wBounds.getWest()-padDeg},${wBounds.getNorth()+padDeg},${wBounds.getEast()+padDeg}`;
+  const padDeg = innerDist / 111320;
+  const sBbox = (wBounds.getSouth()-padDeg)+','+(wBounds.getWest()-padDeg*1.3)+','+(wBounds.getNorth()+padDeg)+','+(wBounds.getEast()+padDeg*1.3);
 
-  const innerQuery=`[out:json][timeout:25];
-  (
-    way[building](${sBbox});
-    way[landuse~"residential|commercial|retail|industrial|mixed"](${sBbox});
-  );
-  out geom;`;
+  const innerQuery='[out:json][timeout:25];(way[building]('+sBbox+');way[landuse~"residential|commercial|retail|industrial|mixed"]('+sBbox+'););out geom;';
 
   let innerData;
   try{innerData=await overpassPost(innerQuery);}
   catch(e){loader(false);status('Fel vid hämtning av kvarter.');return;}
 
   let innerCount=0;
-  const wB = workPolygon.getBounds().pad(0.0002);
   if(innerData.elements){
     innerData.elements.forEach(el=>{
       if(!el.geometry||el.geometry.length<3)return;
       const latlngs=el.geometry.map(n=>[n.lat,n.lon]);
-      // Only show buildings whose bbox overlaps the (slightly padded) work polygon bbox
-      const elBounds = L.latLngBounds(latlngs);
-      if(!wB.intersects(elBounds))return;
+      // Filter: centroid of element must be within innerDist of work polygon centroid
+      const elC = latlngs.reduce((a,ll)=>({lat:a.lat+ll[0],lng:a.lng+ll[1]}),{lat:0,lng:0});
+      const elCentroid = L.latLng(elC.lat/latlngs.length, elC.lng/latlngs.length);
+      if(map.distance(elCentroid, centroid) > innerDist + 80) return;
       const tags=el.tags||{};
       const label=tags.name||tags['addr:street']||(tags.landuse&&tags.landuse!='yes'?tags.landuse:null)||(tags.building&&tags.building!='yes'?tags.building:null)||'Byggnad';
       const poly=L.polygon(latlngs,{
@@ -601,6 +615,7 @@ function resetAll(){
 }
 
 // init
+updateInnerLabel();
 updateOuterLabel();
 </script>
 </body>
