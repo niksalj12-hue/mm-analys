@@ -4,150 +4,82 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MM-analys – Påverkansområden</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.css" />
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
 <style>
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-:root {
-  --bg: #f5f4f0; --surface: #fff; --border: #e2e0d8;
-  --text: #1a1917; --muted: #6b6962; --accent: #1a3a5c;
-}
-body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
-
-header {
-  background: var(--accent); color: #fff;
-  padding: 12px 20px; display: flex; align-items: center; gap: 14px;
-  flex-shrink: 0; z-index: 10;
-}
-header h1 { font-size: 15px; font-weight: 500; }
-header .sub { font-size: 12px; opacity: 0.55; margin-left: 4px; }
-.hbtns { margin-left: auto; display: flex; gap: 8px; }
-.hbtn {
-  padding: 6px 12px; border-radius: 7px; font-size: 12px;
-  font-family: inherit; cursor: pointer; border: 1px solid rgba(255,255,255,0.25);
-  background: rgba(255,255,255,0.1); color: #fff; transition: background 0.15s;
-}
-.hbtn:hover { background: rgba(255,255,255,0.2); }
-
-.layout { display: flex; flex: 1; overflow: hidden; }
-
-aside {
-  width: 240px; min-width: 240px; background: var(--surface);
-  border-right: 1px solid var(--border); overflow-y: auto;
-  display: flex; flex-direction: column;
-}
-.sec { padding: 12px 14px; border-bottom: 1px solid var(--border); }
-.sec-title { font-size: 10px; font-weight: 600; letter-spacing: 0.09em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
-
-.mode-btn {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 8px 10px; margin-bottom: 4px;
-  border-radius: 7px; border: 1px solid var(--border);
-  background: var(--bg); color: var(--text);
-  font-size: 13px; font-family: inherit; cursor: pointer; transition: all 0.12s;
-  text-align: left;
-}
-.mode-btn:hover { background: #eeede9; }
-.mode-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-.cat-btn {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 7px 10px; margin-bottom: 3px;
-  border-radius: 7px; border: 1px solid transparent;
-  background: transparent; font-size: 13px; font-family: inherit;
-  cursor: pointer; transition: all 0.12s; text-align: left; color: var(--text);
-}
-.cat-btn:hover { background: var(--bg); }
-.cat-btn.active { background: var(--bg); border-color: var(--border); font-weight: 500; }
-.cdot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-
-.imp-row { display: flex; gap: 5px; }
-.imp-btn {
-  flex: 1; padding: 6px 4px; border-radius: 7px; border: 1px solid var(--border);
-  background: var(--bg); font-size: 12px; font-family: inherit; cursor: pointer;
-  transition: all 0.12s; text-align: center;
-}
-.imp-hog  { background: #fef2f2; border-color: #dc2626; color: #991b1b; font-weight: 500; }
-.imp-medel { background: #fffbeb; border-color: #d97706; color: #92400e; font-weight: 500; }
-.imp-lag  { background: #f0fdf4; border-color: #16a34a; color: #14532d; font-weight: 500; }
-
-.el-list { display: flex; flex-direction: column; gap: 3px; flex: 1; }
-.el-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 16px 8px; line-height: 1.6; }
-.el-row {
-  display: flex; align-items: center; gap: 7px;
-  padding: 7px 10px; border-radius: 7px; border: 1px solid var(--border);
-  background: var(--bg); font-size: 12px; cursor: pointer;
-}
-.el-row:hover { background: #eeede9; }
-.el-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.el-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.el-del { background: none; border: none; font-size: 16px; cursor: pointer; color: var(--muted); padding: 0 2px; line-height: 1; }
-.el-del:hover { color: #dc2626; }
-
-.map-wrap { flex: 1; position: relative; }
-#map { width: 100%; height: 100%; }
-
-.tip {
-  position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-  background: var(--accent); color: #fff; padding: 7px 16px;
-  border-radius: 999px; font-size: 13px; z-index: 999;
-  pointer-events: none; white-space: nowrap; transition: opacity 0.3s;
-}
-.tip.hide { opacity: 0; }
-
-.overlay {
-  display: none; position: fixed; inset: 0;
-  background: rgba(0,0,0,0.45); z-index: 5000;
-  align-items: center; justify-content: center;
-}
-.overlay.open { display: flex; }
-.modal {
-  background: var(--surface); border-radius: 12px;
-  border: 1px solid var(--border); width: 540px; max-width: 95vw;
-  max-height: 85vh; display: flex; flex-direction: column;
-}
-.modal-head { padding: 14px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
-.modal-head h2 { font-size: 14px; font-weight: 500; }
-.modal-body { padding: 18px; overflow-y: auto; flex: 1; }
-.modal-foot { padding: 12px 18px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
-.btn-p { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 7px; font-size: 13px; font-family: inherit; cursor: pointer; }
-.btn-s { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 7px; font-size: 13px; font-family: inherit; cursor: pointer; }
-
-table.exp { width: 100%; border-collapse: collapse; font-size: 13px; }
-table.exp th { text-align: left; padding: 5px 8px; font-size: 10px; text-transform: uppercase; letter-spacing: 0.07em; color: var(--muted); border-bottom: 1px solid var(--border); }
-table.exp td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
-.pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
-.p-hog { background: #fef2f2; color: #991b1b; }
-.p-medel { background: #fffbeb; color: #92400e; }
-.p-lag { background: #f0fdf4; color: #14532d; }
-
-.search-bar {
-  position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-  z-index: 999; display: flex; width: 300px; max-width: 90%;
-}
-.search-bar input {
-  flex: 1; padding: 8px 12px; border: 1px solid var(--border); border-right: none;
-  border-radius: 7px 0 0 7px; font-size: 13px; font-family: inherit;
-  background: var(--surface); color: var(--text); outline: none;
-}
-.search-bar button {
-  padding: 8px 12px; border: 1px solid var(--accent);
-  border-radius: 0 7px 7px 0; background: var(--accent);
-  color: #fff; font-size: 13px; font-family: inherit; cursor: pointer;
-}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#f5f4f0;--surface:#fff;--border:#e2e0d8;--text:#1a1917;--muted:#6b6962;--accent:#1a3a5c}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{background:var(--accent);color:#fff;padding:11px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0;z-index:10}
+header h1{font-size:14px;font-weight:500}
+.sub{font-size:11px;opacity:.5}
+.hbtns{margin-left:auto;display:flex;gap:7px}
+.hbtn{padding:5px 11px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;transition:background .15s}
+.hbtn:hover{background:rgba(255,255,255,.2)}
+.hbtn.primary{background:rgba(255,255,255,.22);font-weight:500}
+.layout{display:flex;flex:1;overflow:hidden}
+aside{width:238px;min-width:238px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+.sec{padding:11px 13px;border-bottom:1px solid var(--border)}
+.sec-title{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.mode-btn{display:flex;align-items:center;gap:8px;width:100%;padding:7px 9px;margin-bottom:3px;border-radius:6px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:13px;font-family:inherit;cursor:pointer;transition:all .12s;text-align:left}
+.mode-btn:hover{background:#eeede9}
+.mode-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.cat-btn{display:flex;align-items:center;gap:7px;width:100%;padding:6px 9px;margin-bottom:2px;border-radius:6px;border:1px solid transparent;background:transparent;font-size:12px;font-family:inherit;cursor:pointer;transition:all .12s;text-align:left;color:var(--text)}
+.cat-btn:hover{background:var(--bg)}
+.cat-btn.active{background:var(--bg);border-color:var(--border);font-weight:500}
+.cdot{width:9px;height:9px;border-radius:3px;flex-shrink:0}
+.imp-row{display:flex;gap:4px}
+.imp-btn{flex:1;padding:6px 4px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-size:12px;font-family:inherit;cursor:pointer;transition:all .12s;text-align:center}
+.imp-hog{background:#fef2f2;border-color:#dc2626;color:#991b1b;font-weight:500}
+.imp-medel{background:#fffbeb;border-color:#d97706;color:#92400e;font-weight:500}
+.imp-lag{background:#f0fdf4;border-color:#16a34a;color:#14532d;font-weight:500}
+.el-list{display:flex;flex-direction:column;gap:2px;flex:1}
+.el-empty{font-size:12px;color:var(--muted);text-align:center;padding:14px 8px;line-height:1.6}
+.el-row{display:flex;align-items:center;gap:6px;padding:6px 9px;border-radius:6px;border:1px solid var(--border);background:var(--bg);font-size:12px}
+.el-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.el-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.el-del{background:none;border:none;font-size:15px;cursor:pointer;color:var(--muted);padding:0 2px;line-height:1}
+.el-del:hover{color:#dc2626}
+.map-wrap{flex:1;position:relative}
+#map{width:100%;height:100%}
+.tip{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(26,58,92,.92);color:#fff;padding:7px 16px;border-radius:999px;font-size:12px;z-index:999;pointer-events:none;white-space:nowrap;transition:opacity .4s;max-width:90%}
+.tip.hide{opacity:0}
+.loader{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px 28px;text-align:center;z-index:2000;font-size:13px;color:var(--muted);display:none}
+.loader.show{display:block}
+.spinner{width:22px;height:22px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 10px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.search-bar{position:absolute;top:10px;left:50%;transform:translateX(-50%);z-index:999;display:flex;width:310px;max-width:92%}
+.search-bar input{flex:1;padding:8px 12px;border:1px solid var(--border);border-right:none;border-radius:7px 0 0 7px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--text);outline:none}
+.search-bar button{padding:8px 11px;border:1px solid var(--accent);border-radius:0 7px 7px 0;background:var(--accent);color:#fff;font-size:13px;font-family:inherit;cursor:pointer}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border-radius:11px;border:1px solid var(--border);width:560px;max-width:95vw;max-height:85vh;display:flex;flex-direction:column}
+.modal-head{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h2{font-size:14px;font-weight:500}
+.modal-body{padding:16px;overflow-y:auto;flex:1}
+.modal-foot{padding:11px 17px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end}
+.btn-p{background:var(--accent);color:#fff;border:none;padding:8px 15px;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer}
+.btn-s{background:var(--bg);color:var(--text);border:1px solid var(--border);padding:8px 15px;border-radius:6px;font-size:13px;font-family:inherit;cursor:pointer}
+table.exp{width:100%;border-collapse:collapse;font-size:13px}
+table.exp th{text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-bottom:1px solid var(--border)}
+table.exp td{padding:7px 8px;border-bottom:1px solid var(--border)}
+.legend-section{padding:10px 13px;border-bottom:1px solid var(--border)}
+.leg-item{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted);margin-bottom:3px}
+.leg-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.poi-badge{display:inline-block;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:500;margin-left:auto}
 </style>
 </head>
 <body>
 
 <header>
-  <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 13l4.553 2.276A1 1 0 0021 21.382V10.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 4"/></svg>
+  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 13l4.553 2.276A1 1 0 0021 21.382V10.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 4"/></svg>
   <h1>MM-analys – Påverkansområden</h1>
-  <span class="sub">Mobility Management i byggskedet · Göteborgs Stad</span>
+  <span class="sub">Mobility Management i byggskedet</span>
   <div class="hbtns">
     <button class="hbtn" onclick="undoLast()">↩ Ångra</button>
-    <button class="hbtn" onclick="openExport()">⬡ Exportera analys</button>
+    <button class="hbtn" onclick="clearAuto()">✕ Rensa auto</button>
+    <button class="hbtn primary" onclick="openExport()">⬡ Exportera analys</button>
   </div>
 </header>
 
@@ -156,48 +88,23 @@ table.exp td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
     <div class="sec">
       <div class="sec-title">Ritläge</div>
       <button class="mode-btn active" id="btn-polygon" onclick="setMode('polygon')">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-        Rita zon
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>Rita zon manuellt
       </button>
       <button class="mode-btn" id="btn-marker" onclick="setMode('marker')">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="currentColor"/></svg>
-        Markera punkt
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5" fill="currentColor"/></svg>Markera punkt manuellt
       </button>
       <button class="mode-btn" id="btn-view" onclick="setMode('view')">
-        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 12h18M12 3l9 9-9 9"/></svg>
-        Navigera
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>Navigera
       </button>
     </div>
 
     <div class="sec">
-      <div class="sec-title">Kategori</div>
-      <button class="cat-btn active" data-cat="byggomrade" onclick="selectCat(this,'byggomrade')">
-        <span class="cdot" style="background:#1a3a5c"></span>Byggområde (kärna)
-      </button>
-      <button class="cat-btn" data-cat="yttre" onclick="selectCat(this,'yttre')">
-        <span class="cdot" style="background:#b45309"></span>Yttre påverkanszon
-      </button>
-      <button class="cat-btn" data-cat="fotgangare" onclick="selectCat(this,'fotgangare')">
-        <span class="cdot" style="background:#166534"></span>Gång/cykel
-      </button>
-      <button class="cat-btn" data-cat="koll" onclick="selectCat(this,'koll')">
-        <span class="cdot" style="background:#5b21b6"></span>Kollektivtrafik
-      </button>
-      <button class="cat-btn" data-cat="naringsliv" onclick="selectCat(this,'naringsliv')">
-        <span class="cdot" style="background:#9d174d"></span>Näringsliv/handel
-      </button>
-      <button class="cat-btn" data-cat="boende" onclick="selectCat(this,'boende')">
-        <span class="cdot" style="background:#065f46"></span>Boende
-      </button>
-      <button class="cat-btn" data-cat="skola" onclick="selectCat(this,'skola')">
-        <span class="cdot" style="background:#92400e"></span>Skola/förskola
-      </button>
-      <button class="cat-btn" data-cat="vard" onclick="selectCat(this,'vard')">
-        <span class="cdot" style="background:#1e40af"></span>Vård
-      </button>
-      <button class="cat-btn" data-cat="ovrigt" onclick="selectCat(this,'ovrigt')">
-        <span class="cdot" style="background:#374151"></span>Övrigt
-      </button>
+      <div class="sec-title">Kategori (manuell)</div>
+      <button class="cat-btn active" data-cat="byggomrade" onclick="selectCat(this,'byggomrade')"><span class="cdot" style="background:#1a3a5c"></span>Byggområde</button>
+      <button class="cat-btn" data-cat="fotgangare" onclick="selectCat(this,'fotgangare')"><span class="cdot" style="background:#166534"></span>Gång/cykel</button>
+      <button class="cat-btn" data-cat="koll" onclick="selectCat(this,'koll')"><span class="cdot" style="background:#5b21b6"></span>Kollektivtrafik</button>
+      <button class="cat-btn" data-cat="naringsliv" onclick="selectCat(this,'naringsliv')"><span class="cdot" style="background:#9d174d"></span>Näringsliv/handel</button>
+      <button class="cat-btn" data-cat="ovrigt" onclick="selectCat(this,'ovrigt')"><span class="cdot" style="background:#374151"></span>Övrigt</button>
     </div>
 
     <div class="sec">
@@ -209,21 +116,37 @@ table.exp td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
       </div>
     </div>
 
+    <div class="legend-section">
+      <div class="sec-title">Automatiska lager</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#1a3a5c;border-radius:2px;width:14px;height:6px"></div>Inre zon (50m)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#b45309;border-radius:2px;width:14px;height:6px"></div>Yttre zon (200m)</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#dc2626"></div>Skola / förskola</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#1e40af"></div>Vård</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#9d174d"></div>Handel / matbutik</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#5b21b6"></div>Kollektivtrafik</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#065f46"></div>Café / restaurang</div>
+      <div class="leg-item"><div class="leg-dot" style="background:#92400e"></div>Parkering</div>
+    </div>
+
     <div class="sec" style="flex:1">
-      <div class="sec-title">Tillagda element (<span id="elCount">0</span>)</div>
+      <div class="sec-title">Manuella element (<span id="elCount">0</span>)</div>
       <div class="el-list" id="elList">
-        <div class="el-empty">Rita zoner eller markera punkter på kartan för att bygga upp analysen.</div>
+        <div class="el-empty">Rita zoner eller markera punkter manuellt.</div>
       </div>
     </div>
   </aside>
 
   <div class="map-wrap">
     <div class="search-bar">
-      <input id="searchQ" type="text" placeholder="Sök adress i Göteborg…" onkeydown="if(event.key==='Enter')doSearch()" />
-      <button onclick="doSearch()">Sök</button>
+      <input id="searchQ" type="text" placeholder="Sök gata eller adress i Göteborg…" onkeydown="if(event.key==='Enter')doSearch()" value="Kilsgatan, Göteborg" />
+      <button onclick="doSearch()">Sök &amp; analysera</button>
     </div>
     <div id="map"></div>
-    <div class="tip" id="tip">Karta laddad – välj kategori och rita zon eller markera punkt</div>
+    <div class="tip" id="tip">Sök en gata för att hämta automatiska zoner och POI-data</div>
+    <div class="loader" id="loader">
+      <div class="spinner"></div>
+      <div id="loaderMsg">Hämtar data…</div>
+    </div>
   </div>
 </div>
 
@@ -231,10 +154,10 @@ table.exp td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
   <div class="modal">
     <div class="modal-head">
       <h2>Påverkansanalys – sammanställning</h2>
-      <button class="btn-s" style="padding:4px 10px;font-size:12px" onclick="closeExport()">Stäng</button>
+      <button class="btn-s" style="padding:4px 9px;font-size:12px" onclick="closeExport()">Stäng</button>
     </div>
     <div class="modal-body">
-      <p style="font-size:13px;color:#6b6962;margin-bottom:14px">MM-analys steg 1 &amp; 2 – kartlagda påverkansområden och målpunkter.</p>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">MM-analys steg 1 &amp; 2 – automatiskt kartlagda POI samt manuella element.</p>
       <div id="expContent"></div>
     </div>
     <div class="modal-foot">
@@ -246,33 +169,41 @@ table.exp td { padding: 7px 8px; border-bottom: 1px solid var(--border); }
 
 <script>
 const CAT = {
-  byggomrade: { label:'Byggområde (kärna)',  color:'#1a3a5c', fill:'rgba(26,58,92,0.18)' },
-  yttre:      { label:'Yttre påverkanszon',  color:'#b45309', fill:'rgba(180,83,9,0.13)' },
-  fotgangare: { label:'Gång/cykel',          color:'#166534', fill:'rgba(22,101,52,0.15)' },
-  koll:       { label:'Kollektivtrafik',     color:'#5b21b6', fill:'rgba(91,33,182,0.13)' },
-  naringsliv: { label:'Näringsliv/handel',   color:'#9d174d', fill:'rgba(157,23,77,0.13)' },
-  boende:     { label:'Boende',              color:'#065f46', fill:'rgba(6,95,70,0.13)' },
-  skola:      { label:'Skola/förskola',      color:'#92400e', fill:'rgba(146,64,14,0.13)' },
-  vard:       { label:'Vård',                color:'#1e40af', fill:'rgba(30,64,175,0.13)' },
-  ovrigt:     { label:'Övrigt',              color:'#374151', fill:'rgba(55,65,81,0.10)' },
+  byggomrade: { label:'Byggområde',        color:'#1a3a5c', fill:'rgba(26,58,92,0.15)' },
+  fotgangare: { label:'Gång/cykel',        color:'#166534', fill:'rgba(22,101,52,0.15)' },
+  koll:       { label:'Kollektivtrafik',   color:'#5b21b6', fill:'rgba(91,33,182,0.13)' },
+  naringsliv: { label:'Näringsliv',        color:'#9d174d', fill:'rgba(157,23,77,0.13)' },
+  ovrigt:     { label:'Övrigt',            color:'#374151', fill:'rgba(55,65,81,0.10)' },
 };
 const IMP = { hog:'Hög', medel:'Medel', lag:'Låg' };
 
+// POI config: Overpass tag → display config
+const POI_TYPES = [
+  { key:'school',       tags:'node[amenity=school],way[amenity=school],node[amenity=kindergarten],way[amenity=kindergarten]', label:'Skola/förskola', color:'#dc2626', impact:'hog' },
+  { key:'hospital',     tags:'node[amenity=hospital],way[amenity=hospital],node[amenity=clinic],way[amenity=clinic],node[amenity=doctors],node[amenity=pharmacy]', label:'Vård', color:'#1e40af', impact:'hog' },
+  { key:'shop',         tags:'node[shop=supermarket],way[shop=supermarket],node[shop=convenience],node[shop=mall],way[shop=mall],node[shop=department_store]', label:'Handel/matbutik', color:'#9d174d', impact:'medel' },
+  { key:'transit',      tags:'node[highway=bus_stop],node[railway=tram_stop],node[railway=station]', label:'Kollektivtrafik', color:'#5b21b6', impact:'hog' },
+  { key:'cafe',         tags:'node[amenity=cafe],node[amenity=restaurant],node[amenity=bar]', label:'Café/restaurang', color:'#065f46', impact:'medel' },
+  { key:'parking',      tags:'node[amenity=parking],way[amenity=parking]', label:'Parkering', color:'#92400e', impact:'medel' },
+  { key:'library',      tags:'node[amenity=library],way[amenity=library],node[amenity=community_centre]', label:'Bibliotek/fritid', color:'#4338ca', impact:'lag' },
+  { key:'hotel',        tags:'node[tourism=hotel],way[tourism=hotel],node[tourism=hostel]', label:'Hotell', color:'#0891b2', impact:'medel' },
+];
+
 let mode = 'polygon', cat = 'byggomrade', impact = 'hog';
 let elements = [], polyPts = [], tempLine = null;
+let autoLayers = []; // holds all auto-generated layers
+let poiData = [];    // holds POI records for export
 
-// Init Leaflet with jsdelivr tiles (more permissive than unpkg for GitHub Pages)
-const map = L.map('map', { doubleClickZoom: false, zoomControl: true })
+const map = L.map('map', { doubleClickZoom:false, zoomControl:true })
   .setView([57.7028, 11.9671], 16);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+  maxZoom:19,
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
 map.dragging.disable();
 
-// Tip helper
 let tipTimer;
 function tip(msg, dur) {
   const el = document.getElementById('tip');
@@ -280,170 +211,405 @@ function tip(msg, dur) {
   if (tipTimer) clearTimeout(tipTimer);
   if (dur) tipTimer = setTimeout(() => el.classList.add('hide'), dur);
 }
-setTimeout(() => document.getElementById('tip').classList.add('hide'), 3500);
+setTimeout(() => document.getElementById('tip').classList.add('hide'), 4000);
 
-// Mode
+function loader(show, msg) {
+  const el = document.getElementById('loader');
+  el.classList.toggle('show', show);
+  if (msg) document.getElementById('loaderMsg').textContent = msg;
+}
+
 function setMode(m) {
   mode = m;
   cancelPoly();
   ['polygon','marker','view'].forEach(n =>
-    document.getElementById('btn-'+n).classList.toggle('active', n === m));
-  map.dragging[m === 'view' ? 'enable' : 'disable']();
-  if (m === 'polygon') tip('Klicka för att rita zon – dubbelklicka på sista punkten för att avsluta');
-  else if (m === 'marker') tip('Klicka för att placera en målpunkt', 3000);
-  else tip('Navigationläge – dra kartan fritt', 2500);
+    document.getElementById('btn-'+n).classList.toggle('active', n===m));
+  map.dragging[m==='view'?'enable':'disable']();
+  const msgs = {
+    polygon:'Klicka för att rita zon – dubbelklicka för att avsluta',
+    marker:'Klicka för att placera en målpunkt',
+    view:'Navigationläge'
+  };
+  tip(msgs[m], 2500);
 }
 
-// Category
 function selectCat(btn, c) {
   cat = c;
   document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
 }
 
-// Impact
 function selectImpact(i) {
   impact = i;
   ['hog','medel','lag'].forEach(x => {
     const b = document.getElementById('imp-'+x);
-    b.className = 'imp-btn' + (x === i ? ' imp-'+x : '');
+    b.className = 'imp-btn' + (x===i?' imp-'+x:'');
   });
 }
 
-// Drawing
 function cancelPoly() {
   polyPts = [];
   if (tempLine) { map.removeLayer(tempLine); tempLine = null; }
 }
 
 map.on('click', e => {
-  if (mode === 'view') return;
-  if (mode === 'marker') {
+  if (mode==='view') return;
+  if (mode==='marker') {
     const name = prompt('Namn på målpunkt:', CAT[cat].label) || CAT[cat].label;
     const c = CAT[cat];
     const icon = L.divIcon({
-      className: '',
-      html: `<div style="width:14px;height:14px;border-radius:50%;background:${c.color};border:2.5px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35)"></div>`,
-      iconSize: [14,14], iconAnchor: [7,7]
+      className:'',
+      html:`<div style="width:13px;height:13px;border-radius:50%;background:${c.color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`,
+      iconSize:[13,13],iconAnchor:[6,6]
     });
-    const layer = L.marker(e.latlng, { icon }).addTo(map)
-      .bindPopup(popup(name, cat, impact));
-    push({ type:'point', layer, cat, impact, name });
-    tip(name + ' tillagd', 2000);
+    const layer = L.marker(e.latlng,{icon}).addTo(map).bindPopup(popupHTML(name,cat,impact));
+    push({type:'punkt',layer,cat,impact,name});
+    tip(name+' tillagd',2000);
     return;
   }
   polyPts.push(e.latlng);
   if (tempLine) map.removeLayer(tempLine);
-  if (polyPts.length > 1) {
-    tempLine = L.polyline(polyPts, { color: CAT[cat].color, dashArray:'6,4', weight:1.5, opacity:.7 }).addTo(map);
-  }
-  if (polyPts.length === 1) tip('Fortsätt klicka – dubbelklicka för att avsluta');
+  if (polyPts.length>1)
+    tempLine = L.polyline(polyPts,{color:CAT[cat].color,dashArray:'6,4',weight:1.5,opacity:.7}).addTo(map);
+  if (polyPts.length===1) tip('Fortsätt klicka – dubbelklicka för att avsluta');
 });
 
 map.on('dblclick', e => {
-  if (mode !== 'polygon' || polyPts.length < 2) return;
+  if (mode!=='polygon'||polyPts.length<2) return;
   polyPts.push(e.latlng);
-  if (tempLine) { map.removeLayer(tempLine); tempLine = null; }
-  const name = prompt('Namn på zonen:', CAT[cat].label) || CAT[cat].label;
+  if (tempLine){map.removeLayer(tempLine);tempLine=null;}
+  const name = prompt('Namn på zonen:',CAT[cat].label)||CAT[cat].label;
   const c = CAT[cat];
-  const layer = L.polygon([...polyPts], { color: c.color, fillColor: c.fill, fillOpacity:1, weight:2 })
-    .addTo(map).bindPopup(popup(name, cat, impact));
-  push({ type:'zon', layer, cat, impact, name });
-  polyPts = [];
-  tip(name + ' tillagd', 2000);
+  const layer = L.polygon([...polyPts],{color:c.color,fillColor:c.fill,fillOpacity:1,weight:2})
+    .addTo(map).bindPopup(popupHTML(name,cat,impact));
+  push({type:'zon',layer,cat,impact,name});
+  polyPts=[];
+  tip(name+' tillagd',2000);
 });
 
-function popup(name, c, imp) {
-  const cls = imp === 'hog' ? 'p-hog' : imp === 'medel' ? 'p-medel' : 'p-lag';
+function popupHTML(name,c,imp) {
+  const bg=imp==='hog'?'#fef2f2':imp==='medel'?'#fffbeb':'#f0fdf4';
+  const col=imp==='hog'?'#991b1b':imp==='medel'?'#92400e':'#14532d';
   return `<div style="font-family:sans-serif;min-width:150px">
-    <b style="font-size:14px">${name}</b><br>
-    <span style="font-size:12px;color:#6b6962">${CAT[c].label}</span><br><br>
-    <span class="pill ${cls}" style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;background:${imp==='hog'?'#fef2f2':imp==='medel'?'#fffbeb':'#f0fdf4'};color:${imp==='hog'?'#991b1b':imp==='medel'?'#92400e':'#14532d'}">Påverkan: ${IMP[imp]}</span>
+    <b style="font-size:13px">${name}</b><br>
+    <span style="font-size:11px;color:#6b6962">${CAT[c]?CAT[c].label:c}</span><br><br>
+    <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;background:${bg};color:${col}">Påverkan: ${IMP[imp]||imp}</span>
   </div>`;
 }
 
-function push(el) {
-  elements.push(el);
-  renderList();
-}
+function push(el) { elements.push(el); renderList(); }
 
 function undoLast() {
-  if (polyPts.length) { cancelPoly(); tip('Ritning avbruten', 1500); return; }
+  if (polyPts.length){cancelPoly();tip('Ritning avbruten',1500);return;}
   if (!elements.length) return;
   map.removeLayer(elements.pop().layer);
-  renderList();
-  tip('Sista elementet borttaget', 1500);
+  renderList();tip('Borttaget',1500);
 }
 
 function deleteEl(i) {
   map.removeLayer(elements[i].layer);
-  elements.splice(i, 1);
+  elements.splice(i,1);
   renderList();
+}
+
+function clearAuto() {
+  autoLayers.forEach(l => map.removeLayer(l));
+  autoLayers=[];
+  poiData=[];
+  tip('Automatiska lager rensade',2000);
 }
 
 function renderList() {
   document.getElementById('elCount').textContent = elements.length;
   const list = document.getElementById('elList');
   if (!elements.length) {
-    list.innerHTML = '<div class="el-empty">Rita zoner eller markera punkter på kartan för att bygga upp analysen.</div>';
+    list.innerHTML='<div class="el-empty">Rita zoner eller markera punkter manuellt.</div>';
     return;
   }
-  list.innerHTML = elements.map((el, i) => `
+  list.innerHTML = elements.map((el,i)=>`
     <div class="el-row">
-      <div class="el-dot" style="background:${CAT[el.cat].color}"></div>
+      <div class="el-dot" style="background:${CAT[el.cat]?CAT[el.cat].color:'#888'}"></div>
       <span class="el-name">${el.name}</span>
-      <span style="font-size:11px;color:#6b6962">${el.impact==='hog'?'🔴':el.impact==='medel'?'🟡':'🟢'}</span>
+      <span style="font-size:10px;color:var(--muted)">${el.impact==='hog'?'🔴':el.impact==='medel'?'🟡':'🟢'}</span>
       <button class="el-del" onclick="deleteEl(${i})">×</button>
     </div>`).join('');
 }
 
-// Search via Nominatim
+// ─── MAIN SEARCH + AUTO ANALYSIS ───────────────────────────────────────────
+
 async function doSearch() {
   const q = document.getElementById('searchQ').value.trim();
   if (!q) return;
+
+  clearAuto();
+  loader(true,'Söker adress…');
   tip('Söker…');
+
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=se`, {
-      headers: { 'Accept-Language': 'sv' }
-    });
-    const d = await r.json();
-    if (!d.length) { tip('Inga resultat', 2500); return; }
-    map.setView([+d[0].lat, +d[0].lon], 17);
-    tip(d[0].display_name.split(',').slice(0,2).join(', '), 3000);
-  } catch { tip('Sökning misslyckades', 2000); }
+    // 1. Geocode street via Nominatim
+    const geo = await fetch(
+      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=3&countrycodes=se`,
+      {headers:{'Accept-Language':'sv'}}
+    ).then(r=>r.json());
+
+    if (!geo.length) { loader(false); tip('Inga resultat',2500); return; }
+
+    const best = geo[0];
+    const center = [+best.lat, +best.lon];
+    map.setView(center, 17);
+
+    // 2. Fetch street geometry from Overpass to get actual road linestring
+    loader(true,'Hämtar gatugeometri…');
+    const streetName = extractStreetName(q);
+    const bbox = getBbox(center, 0.005);
+
+    const overpassStreet = `
+      [out:json][timeout:15];
+      (
+        way[name~"${streetName}",i](${bbox});
+      );
+      out geom;`;
+
+    const streetRes = await overpassQuery(overpassStreet);
+    let streetCoords = [];
+
+    if (streetRes.elements && streetRes.elements.length > 0) {
+      // Collect all nodes from matching ways
+      streetRes.elements.forEach(way => {
+        if (way.geometry) {
+          way.geometry.forEach(pt => streetCoords.push([pt.lat, pt.lon]));
+        }
+      });
+    }
+
+    // Fallback: use center point if no geometry found
+    if (!streetCoords.length) streetCoords = [center];
+
+    // 3. Draw the street line
+    if (streetCoords.length > 1) {
+      const streetLine = L.polyline(streetCoords, {
+        color:'#1a3a5c', weight:4, opacity:.8
+      }).addTo(map);
+      autoLayers.push(streetLine);
+      map.fitBounds(streetLine.getBounds().pad(0.3));
+    }
+
+    // 4. Buffer zones using Leaflet circles around street centroid
+    // For a proper buffer we create a polygon approximating a buffered line
+    const streetCenter = streetCoords.length > 1
+      ? midpoint(streetCoords)
+      : center;
+
+    // Inner zone (byggområde) ~50m buffer
+    const innerZone = L.circle(streetCenter, {
+      radius: 50,
+      color:'#1a3a5c',
+      fillColor:'rgba(26,58,92,0.12)',
+      fillOpacity:1,
+      weight:2,
+      dashArray:'6,3'
+    }).addTo(map).bindPopup('<b>Inre påverkanszon</b><br>~50m från byggområdet<br><span style="font-size:11px;color:#6b6962">Direkt påverkan</span>');
+    autoLayers.push(innerZone);
+
+    // Outer zone (yttre) ~200m buffer
+    const outerZone = L.circle(streetCenter, {
+      radius: 200,
+      color:'#b45309',
+      fillColor:'rgba(180,83,9,0.07)',
+      fillOpacity:1,
+      weight:2,
+      dashArray:'8,4'
+    }).addTo(map).bindPopup('<b>Yttre påverkanszon</b><br>~200m från byggområdet<br><span style="font-size:11px;color:#6b6962">Indirekt påverkan</span>');
+    autoLayers.push(outerZone);
+
+    // 5. Fetch POIs within 250m radius via Overpass
+    loader(true,'Hämtar verksamheter och målpunkter…');
+    await fetchPOIs(streetCenter);
+
+    loader(false);
+    tip(`Analys klar – ${poiData.length} målpunkter hittade`, 4000);
+
+  } catch(err) {
+    console.error(err);
+    loader(false);
+    tip('Fel vid hämtning – kontrollera nätverksanslutning', 3000);
+  }
 }
 
-// Export
+function extractStreetName(q) {
+  // Remove city name (after comma) and trailing numbers
+  return q.split(',')[0].replace(/\s*\d+\s*$/, '').trim();
+}
+
+function getBbox(center, delta) {
+  return `${center[0]-delta},${center[1]-delta*1.5},${center[0]+delta},${center[1]+delta*1.5}`;
+}
+
+function midpoint(coords) {
+  const mid = Math.floor(coords.length/2);
+  return coords[mid];
+}
+
+async function overpassQuery(query) {
+  const url = 'https://overpass-api.de/api/interpreter';
+  const res = await fetch(url, {
+    method:'POST',
+    body:'data='+encodeURIComponent(query)
+  });
+  return res.json();
+}
+
+async function fetchPOIs(center) {
+  const r = 250; // metres radius
+  const lat = center[0], lon = center[1];
+
+  // Build one combined Overpass query for all POI types
+  const unionParts = [
+    // Schools & kindergartens
+    `node[amenity=school](around:${r},${lat},${lon})`,
+    `way[amenity=school](around:${r},${lat},${lon})`,
+    `node[amenity=kindergarten](around:${r},${lat},${lon})`,
+    // Hospitals & clinics
+    `node[amenity=hospital](around:${r},${lat},${lon})`,
+    `node[amenity=clinic](around:${r},${lat},${lon})`,
+    `node[amenity=doctors](around:${r},${lat},${lon})`,
+    `node[amenity=pharmacy](around:${r},${lat},${lon})`,
+    // Shops
+    `node[shop=supermarket](around:${r},${lat},${lon})`,
+    `node[shop=convenience](around:${r},${lat},${lon})`,
+    `node[shop](around:${r},${lat},${lon})`,
+    `way[shop=supermarket](around:${r},${lat},${lon})`,
+    // Transit
+    `node[highway=bus_stop](around:${r},${lat},${lon})`,
+    `node[railway=tram_stop](around:${r},${lat},${lon})`,
+    `node[railway=station](around:${r},${lat},${lon})`,
+    // Food & drink
+    `node[amenity=cafe](around:${r},${lat},${lon})`,
+    `node[amenity=restaurant](around:${r},${lat},${lon})`,
+    `node[amenity=bar](around:${r},${lat},${lon})`,
+    // Parking
+    `node[amenity=parking](around:${r},${lat},${lon})`,
+    `way[amenity=parking](around:${r},${lat},${lon})`,
+    // Other
+    `node[amenity=library](around:${r},${lat},${lon})`,
+    `node[tourism=hotel](around:${r},${lat},${lon})`,
+    `node[amenity=community_centre](around:${r},${lat},${lon})`,
+    `node[amenity=place_of_worship](around:${r},${lat},${lon})`,
+  ];
+
+  const q = `[out:json][timeout:20];(${unionParts.join(';')};);out center;`;
+
+  let data;
+  try { data = await overpassQuery(q); }
+  catch(e) { console.error('POI fetch failed', e); return; }
+
+  if (!data.elements) return;
+
+  const seen = new Set();
+
+  data.elements.forEach(el => {
+    const tags = el.tags || {};
+    const id = el.id;
+    if (seen.has(id)) return;
+    seen.add(id);
+
+    const elLat = el.lat || (el.center && el.center.lat);
+    const elLon = el.lon || (el.center && el.center.lon);
+    if (!elLat || !elLon) return;
+
+    const cfg = classifyPOI(tags);
+    if (!cfg) return;
+
+    const name = tags.name || tags['name:sv'] || cfg.label;
+    const latlng = [elLat, elLon];
+
+    // Determine zone (inner/outer)
+    const dist = map.distance(latlng, center);
+    const zone = dist <= 50 ? 'Inre zon' : 'Yttre zon';
+
+    // Create marker
+    const icon = L.divIcon({
+      className:'',
+      html:`<div style="width:11px;height:11px;border-radius:50%;background:${cfg.color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+      iconSize:[11,11],iconAnchor:[5,5]
+    });
+
+    const marker = L.marker(latlng, {icon}).addTo(map)
+      .bindPopup(`<div style="font-family:sans-serif;min-width:140px">
+        <b style="font-size:13px">${name}</b><br>
+        <span style="font-size:11px;color:#6b6962">${cfg.label}</span><br>
+        <span style="font-size:11px;color:#6b6962">${zone} · ${Math.round(dist)}m</span><br><br>
+        <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;background:${cfg.impact==='hog'?'#fef2f2':cfg.impact==='medel'?'#fffbeb':'#f0fdf4'};color:${cfg.impact==='hog'?'#991b1b':cfg.impact==='medel'?'#92400e':'#14532d'}">Påverkan: ${IMP[cfg.impact]}</span>
+      </div>`);
+
+    autoLayers.push(marker);
+    poiData.push({ name, type: cfg.label, zone, dist: Math.round(dist), impact: cfg.impact });
+  });
+}
+
+function classifyPOI(tags) {
+  const a = tags.amenity, s = tags.shop, h = tags.highway, r = tags.railway, t = tags.tourism;
+  if (a==='school'||a==='kindergarten') return {label:'Skola/förskola',color:'#dc2626',impact:'hog'};
+  if (a==='hospital'||a==='clinic'||a==='doctors') return {label:'Vård',color:'#1e40af',impact:'hog'};
+  if (a==='pharmacy') return {label:'Apotek',color:'#1e40af',impact:'medel'};
+  if (s==='supermarket'||s==='convenience'||s==='grocery') return {label:'Dagligvaruhandel',color:'#9d174d',impact:'medel'};
+  if (s==='mall'||s==='department_store') return {label:'Handel',color:'#9d174d',impact:'medel'};
+  if (s) return {label:'Handel',color:'#9d174d',impact:'lag'};
+  if (h==='bus_stop') return {label:'Busshållplats',color:'#5b21b6',impact:'hog'};
+  if (r==='tram_stop') return {label:'Spårvagnshållplats',color:'#5b21b6',impact:'hog'};
+  if (r==='station') return {label:'Station',color:'#5b21b6',impact:'hog'};
+  if (a==='cafe') return {label:'Café',color:'#065f46',impact:'medel'};
+  if (a==='restaurant') return {label:'Restaurang',color:'#065f46',impact:'medel'};
+  if (a==='bar') return {label:'Bar',color:'#065f46',impact:'lag'};
+  if (a==='parking') return {label:'Parkering',color:'#92400e',impact:'medel'};
+  if (a==='library') return {label:'Bibliotek',color:'#4338ca',impact:'lag'};
+  if (a==='community_centre') return {label:'Aktivitetshus',color:'#4338ca',impact:'lag'};
+  if (a==='place_of_worship') return {label:'Kyrka/moské',color:'#374151',impact:'lag'};
+  if (t==='hotel'||t==='hostel') return {label:'Hotell',color:'#0891b2',impact:'medel'};
+  return null;
+}
+
+// ─── EXPORT ──────────────────────────────────────────────────────────────────
+
 function openExport() {
-  if (!elements.length) { alert('Lägg till element på kartan först.'); return; }
-  const rows = elements.map((el, i) => {
-    const cls = el.impact === 'hog' ? 'p-hog' : el.impact === 'medel' ? 'p-medel' : 'p-lag';
+  const allItems = [
+    ...poiData.map(p=>({name:p.name,type:p.type,typeSrc:'Auto (OSM)',zone:p.zone,dist:p.dist+'m',impact:p.impact})),
+    ...elements.map(e=>({name:e.name,type:CAT[e.cat]?CAT[e.cat].label:e.cat,typeSrc:'Manuell',zone:'–',dist:'–',impact:e.impact}))
+  ];
+  if (!allItems.length){alert('Inga element att exportera.');return;}
+
+  const rows = allItems.map((it,i)=>{
+    const bg=it.impact==='hog'?'#fef2f2':it.impact==='medel'?'#fffbeb':'#f0fdf4';
+    const col=it.impact==='hog'?'#991b1b':it.impact==='medel'?'#92400e':'#14532d';
     return `<tr>
       <td>${i+1}</td>
-      <td><span style="display:inline-flex;align-items:center;gap:6px">
-        <span style="width:8px;height:8px;border-radius:50%;background:${CAT[el.cat].color};display:inline-block"></span>
-        ${el.name}</span></td>
-      <td>${CAT[el.cat].label}</td>
-      <td>${el.type === 'zon' ? 'Zon' : 'Punkt'}</td>
-      <td><span class="pill ${cls}" style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;background:${el.impact==='hog'?'#fef2f2':el.impact==='medel'?'#fffbeb':'#f0fdf4'};color:${el.impact==='hog'?'#991b1b':el.impact==='medel'?'#92400e':'#14532d'}">${IMP[el.impact]}</span></td>
+      <td>${it.name}</td>
+      <td>${it.type}</td>
+      <td style="color:var(--muted);font-size:11px">${it.typeSrc}</td>
+      <td>${it.zone}</td>
+      <td style="font-family:monospace;font-size:11px">${it.dist}</td>
+      <td><span style="display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:500;background:${bg};color:${col}">${IMP[it.impact]}</span></td>
     </tr>`;
   }).join('');
-  document.getElementById('expContent').innerHTML = `
+
+  document.getElementById('expContent').innerHTML=`
     <table class="exp">
-      <thead><tr><th>#</th><th>Namn</th><th>Kategori</th><th>Typ</th><th>Påverkan</th></tr></thead>
+      <thead><tr><th>#</th><th>Namn</th><th>Typ</th><th>Källa</th><th>Zon</th><th>Avstånd</th><th>Påverkan</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
   document.getElementById('expOverlay').classList.add('open');
 }
 
-function closeExport() { document.getElementById('expOverlay').classList.remove('open'); }
+function closeExport(){document.getElementById('expOverlay').classList.remove('open');}
 
-function copyExp() {
-  const txt = elements.map((el,i) =>
-    `${i+1}. ${el.name} – ${CAT[el.cat].label} (${el.type}) – Påverkan: ${IMP[el.impact]}`
-  ).join('\n');
-  navigator.clipboard.writeText(txt).then(() => { closeExport(); tip('Kopierat!', 2000); });
+function copyExp(){
+  const lines=[...poiData.map(p=>`${p.name} – ${p.type} (${p.zone}, ${p.dist}m) – Påverkan: ${IMP[p.impact]}`),
+               ...elements.map(e=>`${e.name} – ${CAT[e.cat]?CAT[e.cat].label:e.cat} (Manuell) – Påverkan: ${IMP[e.impact]}`)];
+  navigator.clipboard.writeText(lines.join('\n')).then(()=>{closeExport();tip('Kopierat!',2000);});
 }
+
+// Auto-run search on load
+window.addEventListener('load', () => setTimeout(doSearch, 800));
 </script>
 </body>
 </html>
