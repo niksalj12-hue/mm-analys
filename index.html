@@ -9,9 +9,11 @@
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{--bg:#f5f4f0;--surface:#fff;--border:#e2e0d8;--text:#1a1917;--muted:#6b6962;--accent:#1a3a5c;
-  --inner-fill:rgba(26,58,92,0.13);--inner-stroke:#1a3a5c;
-  --outer-fill:rgba(180,83,9,0.10);--outer-stroke:#b45309;}
+:root{
+  --bg:#f5f4f0;--surface:#fff;--border:#e2e0d8;--text:#1a1917;--muted:#6b6962;--accent:#1a3a5c;
+  --inner-c:#1d4ed8;--inner-f:rgba(29,78,216,0.18);
+  --outer-c:#c2410c;--outer-f:rgba(194,65,12,0.12);
+}
 body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);height:100vh;display:flex;flex-direction:column;overflow:hidden}
 header{background:var(--accent);color:#fff;padding:11px 18px;display:flex;align-items:center;gap:12px;flex-shrink:0}
 header h1{font-size:14px;font-weight:500}
@@ -19,8 +21,10 @@ header h1{font-size:14px;font-weight:500}
 .hbtns{margin-left:auto;display:flex;gap:7px}
 .hbtn{padding:5px 12px;border-radius:6px;font-size:12px;font-family:inherit;cursor:pointer;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.1);color:#fff;transition:background .15s}
 .hbtn:hover{background:rgba(255,255,255,.2)}
+.hbtn.primary{background:rgba(255,255,255,.2);font-weight:500}
+.hbtn:disabled{opacity:.4;cursor:not-allowed}
 .layout{display:flex;flex:1;overflow:hidden}
-aside{width:244px;min-width:244px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
+aside{width:248px;min-width:248px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column}
 .sec{padding:12px 14px;border-bottom:1px solid var(--border)}
 .stitle{font-size:10px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
 .steps{display:flex;flex-direction:column;gap:5px}
@@ -41,15 +45,18 @@ aside{width:244px;min-width:244px;background:var(--surface);border-right:1px sol
 .big-btn.analyze:hover{background:#14532d}
 .big-btn.analyze:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
 .hint{font-size:11px;color:var(--muted);line-height:1.5;margin-top:5px}
-.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}
-.slider-row label{font-size:12px;color:var(--muted);width:86px;flex-shrink:0}
+.slider-row{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.slider-row label{font-size:12px;color:var(--muted);width:80px;flex-shrink:0}
 .slider-row input[type=range]{flex:1}
-.slider-row span{font-size:12px;font-weight:500;width:42px;text-align:right}
-.zone-legend{display:flex;flex-direction:column;gap:5px;margin-top:4px}
-.zleg{display:flex;align-items:center;gap:8px;font-size:12px}
-.zleg-swatch{width:28px;height:14px;border-radius:3px;flex-shrink:0}
+.slider-row span{font-size:12px;font-weight:500;width:44px;text-align:right}
+.dist-context{font-size:11px;color:var(--muted);background:var(--bg);border-radius:5px;padding:4px 8px;margin-top:2px}
+.zone-legend{display:flex;flex-direction:column;gap:5px}
+.zleg{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)}
+.zswatch{width:26px;height:13px;border-radius:3px;flex-shrink:0}
+.poi-legend{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.pleg{display:flex;align-items:center;gap:7px;font-size:11px;color:var(--muted)}
+.pdot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
 .status-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--muted);line-height:1.6;min-height:48px}
-.status-box b{color:var(--text)}
 .map-wrap{flex:1;position:relative}
 #map{width:100%;height:100%}
 .tip{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(26,58,92,.92);color:#fff;padding:7px 18px;border-radius:999px;font-size:12px;z-index:999;pointer-events:none;white-space:nowrap;transition:opacity .4s;max-width:90%;text-align:center}
@@ -61,16 +68,30 @@ aside{width:244px;min-width:244px;background:var(--surface);border-right:1px sol
 .search-wrap{display:flex;gap:5px}
 .search-wrap input{flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:inherit;outline:none}
 .search-wrap button{padding:7px 11px;border-radius:6px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:13px;font-family:inherit;cursor:pointer}
+
+/* POI label tooltips on map */
+.poi-label{
+  background:rgba(255,255,255,0.92);
+  border:1px solid rgba(0,0,0,0.15);
+  border-radius:4px;
+  padding:2px 6px;
+  font-size:11px;
+  font-family:'DM Sans',sans-serif;
+  font-weight:500;
+  white-space:nowrap;
+  box-shadow:0 1px 4px rgba(0,0,0,.15);
+  pointer-events:none;
+}
 </style>
 </head>
 <body>
-
 <header>
   <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 13l4.553 2.276A1 1 0 0021 21.382V10.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 4"/></svg>
   <h1>MM-analys – Påverkansområden</h1>
   <span class="sub">Mobility Management i byggskedet · Göteborgs Stad</span>
   <div class="hbtns">
     <button class="hbtn" onclick="resetAll()">↺ Börja om</button>
+    <button class="hbtn primary" id="exportBtn" onclick="exportMap()" disabled>⬡ Exportera karta</button>
   </div>
 </header>
 
@@ -79,26 +100,16 @@ aside{width:244px;min-width:244px;background:var(--surface);border-right:1px sol
     <div class="sec">
       <div class="stitle">Arbetsflöde</div>
       <div class="steps">
-        <div class="step active" id="step1">
-          <div class="step-num">1</div>
-          <div class="step-text"><span class="step-title">Sök plats</span>Navigera till byggområdet</div>
-        </div>
-        <div class="step" id="step2">
-          <div class="step-num">2</div>
-          <div class="step-text"><span class="step-title">Rita arbetsområde</span>Polygon längs byggytan</div>
-        </div>
-        <div class="step" id="step3">
-          <div class="step-num">3</div>
-          <div class="step-text"><span class="step-title">Generera zoner</span>Kvarter + nätverk från OSM</div>
-        </div>
+        <div class="step active" id="step1"><div class="step-num">1</div><div class="step-text"><span class="step-title">Sök plats</span>Navigera till byggområdet</div></div>
+        <div class="step" id="step2"><div class="step-num">2</div><div class="step-text"><span class="step-title">Rita arbetsområde</span>Polygon längs byggytan</div></div>
+        <div class="step" id="step3"><div class="step-num">3</div><div class="step-text"><span class="step-title">Generera analys</span>Zoner + målpunkter från OSM</div></div>
       </div>
     </div>
 
     <div class="sec">
       <div class="stitle">1. Sök plats</div>
       <div class="search-wrap">
-        <input id="searchQ" type="text" placeholder="T.ex. Kilsgatan, Göteborg" value="Kilsgatan, Göteborg"
-          onkeydown="if(event.key==='Enter')doSearch()"/>
+        <input id="searchQ" type="text" placeholder="T.ex. Kilsgatan, Göteborg" value="Kilsgatan, Göteborg" onkeydown="if(event.key==='Enter')doSearch()"/>
         <button onclick="doSearch()">Sök</button>
       </div>
     </div>
@@ -109,57 +120,51 @@ aside{width:244px;min-width:244px;background:var(--surface);border-right:1px sol
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
         <span id="drawBtnLabel">Starta ritning</span>
       </button>
-      <p class="hint">Klicka punkt för punkt. Klicka på den gröna startpunkten för att stänga polygonen.</p>
+      <p class="hint">Klicka punkt för punkt längs byggarbetsplatsen. Klicka på den gröna startpunkten för att stänga polygonen.</p>
     </div>
 
     <div class="sec">
       <div class="stitle">3. Zoninställningar</div>
-
       <div style="margin-bottom:10px">
-        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.04em">INRE ZON – angränsande kvarter</div>
-        <div class="slider-row">
-          <label>Sökavstånd</label>
-          <input type="range" min="5" max="100" value="30" step="5" id="innerDist"
-            oninput="document.getElementById('innerDistVal').textContent=this.value+'m'"/>
-          <span id="innerDistVal">30m</span>
-        </div>
-        <p class="hint" style="margin-top:0">OSM-kvarter (byggnader, tomter) inom detta avstånd från arbetsytan markeras.</p>
+        <div style="font-size:11px;font-weight:600;color:var(--inner-c);margin-bottom:5px">INRE ZON – angränsande kvarter</div>
+        <p class="hint" style="margin-top:0;margin-bottom:6px">Byggnader och tomter som tangerar eller ligger omedelbart intill arbetsområdet.</p>
       </div>
-
       <div>
-        <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;letter-spacing:.04em">YTTRE ZON – nätverksbuffert</div>
+        <div style="font-size:11px;font-weight:600;color:var(--outer-c);margin-bottom:5px">YTTRE ZON – nätverksbuffert</div>
         <div class="slider-row">
-          <label>Gångavstånd</label>
+          <label>Räckvidd</label>
           <input type="range" min="100" max="800" value="400" step="50" id="outerDist"
-            oninput="document.getElementById('outerDistVal').textContent=this.value+'m'"/>
+            oninput="updateOuterLabel()"/>
           <span id="outerDistVal">400m</span>
         </div>
-        <p class="hint" style="margin-top:0">Gator och vägar inom detta avstånd längs vägnätet hämtas och bildar yttre zon.</p>
+        <div class="dist-context" id="distContext">≈ 5 min gångväg</div>
       </div>
     </div>
 
     <div class="sec">
       <button class="big-btn analyze" id="analyzeBtn" onclick="runAnalysis()" disabled>
         <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        Generera zoner
+        Generera analys
       </button>
     </div>
 
     <div class="sec">
-      <div class="stitle">Förklaring</div>
+      <div class="stitle">Förklaring – zoner</div>
       <div class="zone-legend">
-        <div class="zleg">
-          <div class="zleg-swatch" style="background:#1a3a5c"></div>
-          <span>Arbetsområde</span>
-        </div>
-        <div class="zleg">
-          <div class="zleg-swatch" style="background:var(--inner-fill);border:1.5px dashed var(--inner-stroke)"></div>
-          <span>Inre zon – angränsande kvarter</span>
-        </div>
-        <div class="zleg">
-          <div class="zleg-swatch" style="background:var(--outer-fill);border:1.5px dashed var(--outer-stroke)"></div>
-          <span>Yttre zon – nätverksbuffert</span>
-        </div>
+        <div class="zleg"><div class="zswatch" style="background:rgba(26,58,92,0.35);border:2px solid #1a3a5c"></div>Arbetsområde</div>
+        <div class="zleg"><div class="zswatch" style="background:var(--inner-f);border:2px solid var(--inner-c)"></div>Inre zon – kvarter</div>
+        <div class="zleg"><div class="zswatch" style="background:var(--outer-f);border:2px dashed var(--outer-c)"></div>Yttre zon – nätverk</div>
+      </div>
+      <div class="stitle" style="margin-top:10px">Förklaring – målpunkter</div>
+      <div class="poi-legend">
+        <div class="pleg"><div class="pdot" style="background:#dc2626"></div>Skola / förskola</div>
+        <div class="pleg"><div class="pdot" style="background:#1e40af"></div>Vård / apotek</div>
+        <div class="pleg"><div class="pdot" style="background:#9d174d"></div>Handel</div>
+        <div class="pleg"><div class="pdot" style="background:#5b21b6"></div>Kollektivtrafik</div>
+        <div class="pleg"><div class="pdot" style="background:#065f46"></div>Café / restaurang</div>
+        <div class="pleg"><div class="pdot" style="background:#92400e"></div>Parkering</div>
+        <div class="pleg"><div class="pdot" style="background:#4338ca"></div>Bibliotek / fritid</div>
+        <div class="pleg"><div class="pdot" style="background:#0891b2"></div>Hotell</div>
       </div>
     </div>
 
@@ -167,7 +172,6 @@ aside{width:244px;min-width:244px;background:var(--surface);border-right:1px sol
       <div class="stitle">Status</div>
       <div class="status-box" id="statusBox">Rita arbetsområdet för att komma igång.</div>
     </div>
-
   </aside>
 
   <div class="map-wrap">
@@ -177,328 +181,413 @@ aside{width:244px;min-width:244px;background:var(--surface);border-right:1px sol
   </div>
 </div>
 
+<!-- Export overlay -->
+<div id="expOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:12px;padding:0;max-width:860px;width:95vw;max-height:90vh;display:flex;flex-direction:column;overflow:hidden">
+    <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between">
+      <b style="font-size:14px">Exportera påverkansanalys</b>
+      <button onclick="closeExport()" style="background:none;border:1px solid var(--border);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px">Stäng</button>
+    </div>
+    <div style="padding:18px;overflow-y:auto;flex:1" id="expBody">
+      <p style="font-size:13px;color:var(--muted);margin-bottom:16px">Välj exportformat:</p>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button onclick="doPrint()" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border);background:var(--accent);color:#fff;font-size:13px;font-family:inherit;cursor:pointer;font-weight:500">🖨 Skriv ut / Spara PDF</button>
+        <button onclick="copyPoiText()" style="padding:10px 18px;border-radius:8px;border:1px solid var(--border);background:var(--bg);font-size:13px;font-family:inherit;cursor:pointer">📋 Kopiera POI-lista</button>
+      </div>
+      <div style="margin-top:20px">
+        <div style="font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:10px">Hittade målpunkter</div>
+        <table id="expTable" style="width:100%;border-collapse:collapse;font-size:12px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border)">
+              <th style="text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">#</th>
+              <th style="text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Namn</th>
+              <th style="text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Typ</th>
+              <th style="text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Zon</th>
+              <th style="text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Avstånd</th>
+              <th style="text-align:left;padding:5px 8px;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)">Påverkan</th>
+            </tr>
+          </thead>
+          <tbody id="expTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // ── MAP ───────────────────────────────────────────────────────────────────────
-const map = L.map('map', { doubleClickZoom: false, zoomControl: true })
-  .setView([57.7028, 11.9671], 16);
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19,
-  attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+const map = L.map('map',{doubleClickZoom:false,zoomControl:true}).setView([57.7028,11.9671],16);
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 }).addTo(map);
 
 // ── STATE ─────────────────────────────────────────────────────────────────────
-let drawing = false;
-let drawPoints = [], drawMarkers = [], drawPolyline = null;
-let workPolygon = null;
-let autoLayers = [];
+let drawing=false, drawPoints=[], drawMarkers=[], drawPolyline=null;
+let workPolygon=null, autoLayers=[], poiData=[];
 
 // ── HELPERS ───────────────────────────────────────────────────────────────────
 let tipTimer;
-function tip(msg, dur) {
-  const el = document.getElementById('tip');
-  el.textContent = msg; el.classList.remove('hide');
-  if (tipTimer) clearTimeout(tipTimer);
-  if (dur) tipTimer = setTimeout(() => el.classList.add('hide'), dur);
+function tip(msg,dur){
+  const el=document.getElementById('tip');
+  el.textContent=msg;el.classList.remove('hide');
+  if(tipTimer)clearTimeout(tipTimer);
+  if(dur)tipTimer=setTimeout(()=>el.classList.add('hide'),dur);
 }
-setTimeout(() => document.getElementById('tip').classList.add('hide'), 4000);
-
-function loader(show, msg) {
-  document.getElementById('loader').classList.toggle('show', show);
-  if (msg) document.getElementById('loaderMsg').textContent = msg;
+setTimeout(()=>document.getElementById('tip').classList.add('hide'),4000);
+function loader(show,msg){
+  document.getElementById('loader').classList.toggle('show',show);
+  if(msg)document.getElementById('loaderMsg').textContent=msg;
 }
-
-function status(html) {
-  document.getElementById('statusBox').innerHTML = html;
-}
-
-function setStep(n) {
-  [1,2,3].forEach(i => {
-    const el = document.getElementById('step'+i);
+function status(html){document.getElementById('statusBox').innerHTML=html;}
+function setStep(n){
+  [1,2,3].forEach(i=>{
+    const el=document.getElementById('step'+i);
     el.classList.remove('active','done');
-    if (i < n) el.classList.add('done');
-    else if (i === n) el.classList.add('active');
+    if(i<n)el.classList.add('done');
+    else if(i===n)el.classList.add('active');
   });
 }
+function overpassPost(q){
+  return fetch('https://overpass-api.de/api/interpreter',{method:'POST',body:'data='+encodeURIComponent(q)}).then(r=>r.json());
+}
+function getCentroid(latlngs){
+  const n=latlngs.length,s=latlngs.reduce((a,ll)=>({lat:a.lat+ll.lat,lng:a.lng+ll.lng}),{lat:0,lng:0});
+  return L.latLng(s.lat/n,s.lng/n);
+}
+function convexHull(points){
+  if(points.length<3)return points;
+  const pts=points.map(p=>({x:p[1],y:p[0]}));
+  pts.sort((a,b)=>a.x===b.x?a.y-b.y:a.x-b.x);
+  const cross=(o,a,b)=>(a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
+  const lower=[],upper=[];
+  for(const p of pts){while(lower.length>=2&&cross(lower[lower.length-2],lower[lower.length-1],p)<=0)lower.pop();lower.push(p);}
+  for(let i=pts.length-1;i>=0;i--){const p=pts[i];while(upper.length>=2&&cross(upper[upper.length-2],upper[upper.length-1],p)<=0)upper.pop();upper.push(p);}
+  upper.pop();lower.pop();
+  return[...lower,...upper].map(p=>[p.y,p.x]);
+}
 
-function overpassPost(query) {
-  return fetch('https://overpass-api.de/api/interpreter', {
-    method: 'POST',
-    body: 'data=' + encodeURIComponent(query)
-  }).then(r => r.json());
+// ── OUTER LABEL ───────────────────────────────────────────────────────────────
+function updateOuterLabel(){
+  const v=parseInt(document.getElementById('outerDist').value);
+  document.getElementById('outerDistVal').textContent=v+'m';
+  let ctx='';
+  if(v<=150)ctx='≈ 2 min gångväg';
+  else if(v<=250)ctx='≈ 3 min gångväg';
+  else if(v<=400)ctx='≈ 5 min gångväg';
+  else if(v<=600)ctx='≈ 7 min gångväg – 2–3 kvarter';
+  else ctx='≈ 10 min gångväg – flera kvarter';
+  document.getElementById('distContext').textContent=ctx;
 }
 
 // ── SEARCH ────────────────────────────────────────────────────────────────────
-async function doSearch() {
-  const q = document.getElementById('searchQ').value.trim();
-  if (!q) return;
+async function doSearch(){
+  const q=document.getElementById('searchQ').value.trim();
+  if(!q)return;
   tip('Söker…');
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=se`,
-      { headers: { 'Accept-Language': 'sv' } }
-    ).then(r => r.json());
-    if (!res.length) { tip('Inga resultat', 2500); return; }
-    map.setView([+res[0].lat, +res[0].lon], 17);
-    tip('Hittad – starta ritning och markera arbetsområdet', 4000);
+  try{
+    const res=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=se`,{headers:{'Accept-Language':'sv'}}).then(r=>r.json());
+    if(!res.length){tip('Inga resultat',2500);return;}
+    map.setView([+res[0].lat,+res[0].lon],17);
+    tip('Hittad – starta ritning och markera arbetsområdet',4000);
     setStep(2);
     status('Plats hittad. Rita nu arbetsområdets polygon på kartan.');
-  } catch(e) { tip('Sökning misslyckades', 2500); }
+  }catch(e){tip('Sökning misslyckades',2500);}
 }
 
 // ── DRAW ──────────────────────────────────────────────────────────────────────
-function toggleDraw() {
-  drawing ? stopDraw(false) : startDraw();
-}
-
-function startDraw() {
-  if (workPolygon) { map.removeLayer(workPolygon); workPolygon = null; }
+function toggleDraw(){drawing?stopDraw(false):startDraw();}
+function startDraw(){
+  if(workPolygon){map.removeLayer(workPolygon);workPolygon=null;}
   clearAutoLayers();
-  drawPoints = [];
-  drawMarkers.forEach(m => map.removeLayer(m)); drawMarkers = [];
-  if (drawPolyline) { map.removeLayer(drawPolyline); drawPolyline = null; }
-  document.getElementById('analyzeBtn').disabled = true;
-
-  drawing = true;
-  map.dragging.disable();
-  map.getContainer().style.cursor = 'crosshair';
+  drawPoints=[];
+  drawMarkers.forEach(m=>map.removeLayer(m));drawMarkers=[];
+  if(drawPolyline){map.removeLayer(drawPolyline);drawPolyline=null;}
+  document.getElementById('analyzeBtn').disabled=true;
+  document.getElementById('exportBtn').disabled=true;
+  drawing=true;map.dragging.disable();map.getContainer().style.cursor='crosshair';
   document.getElementById('drawBtn').classList.add('active');
-  document.getElementById('drawBtnLabel').textContent = 'Avsluta ritning';
+  document.getElementById('drawBtnLabel').textContent='Avsluta ritning';
   tip('Klicka för att lägga punkter. Klicka den gröna startpunkten för att stänga.');
   status('Ritar… Klicka på startpunkten (grön) för att avsluta polygonen.');
 }
-
-function stopDraw(finish) {
-  drawing = false;
-  map.dragging.enable();
-  map.getContainer().style.cursor = '';
+function stopDraw(finish){
+  drawing=false;map.dragging.enable();map.getContainer().style.cursor='';
   document.getElementById('drawBtn').classList.remove('active');
-  document.getElementById('drawBtnLabel').textContent = 'Rita om arbetsområde';
-
-  if (finish && drawPoints.length >= 3) {
-    workPolygon = L.polygon(drawPoints, {
-      color: '#1a3a5c', fillColor: 'rgba(26,58,92,0.22)',
-      fillOpacity: 1, weight: 2.5
-    }).addTo(map).bindPopup('<b>Arbetsområde</b>');
-
-    drawMarkers.forEach(m => map.removeLayer(m)); drawMarkers = [];
-    if (drawPolyline) { map.removeLayer(drawPolyline); drawPolyline = null; }
-
-    document.getElementById('analyzeBtn').disabled = false;
-    tip('Arbetsområde klart – justera avstånd och klicka Generera zoner', 4000);
+  document.getElementById('drawBtnLabel').textContent='Rita om arbetsområde';
+  if(finish&&drawPoints.length>=3){
+    workPolygon=L.polygon(drawPoints,{color:'#1a3a5c',fillColor:'rgba(26,58,92,0.25)',fillOpacity:1,weight:2.5}).addTo(map).bindPopup('<b>Arbetsområde</b>');
+    drawMarkers.forEach(m=>map.removeLayer(m));drawMarkers=[];
+    if(drawPolyline){map.removeLayer(drawPolyline);drawPolyline=null;}
+    document.getElementById('analyzeBtn').disabled=false;
+    tip('Arbetsområde klart – klicka Generera analys',4000);
     setStep(3);
-    status('<b>Arbetsområde ritat.</b> Justera zonavstånden och klicka <em>Generera zoner</em>.');
-  } else {
-    drawMarkers.forEach(m => map.removeLayer(m)); drawMarkers = [];
-    if (drawPolyline) { map.removeLayer(drawPolyline); drawPolyline = null; }
-    drawPoints = [];
-    tip('Ritning avbruten', 2000);
+    status('<b>Arbetsområde ritat.</b><br>Justera räckvidden för yttre zon och klicka <em>Generera analys</em>.');
+  }else{
+    drawMarkers.forEach(m=>map.removeLayer(m));drawMarkers=[];
+    if(drawPolyline){map.removeLayer(drawPolyline);drawPolyline=null;}
+    drawPoints=[];tip('Ritning avbruten',2000);
   }
 }
-
-map.on('click', e => {
-  if (!drawing) return;
-
-  // Close polygon if near first point
-  if (drawPoints.length >= 3) {
-    const p1 = map.latLngToContainerPoint(drawPoints[0]);
-    const p2 = map.latLngToContainerPoint(e.latlng);
-    if (Math.hypot(p1.x-p2.x, p1.y-p2.y) < 14) { stopDraw(true); return; }
+map.on('click',e=>{
+  if(!drawing)return;
+  if(drawPoints.length>=3){
+    const p1=map.latLngToContainerPoint(drawPoints[0]),p2=map.latLngToContainerPoint(e.latlng);
+    if(Math.hypot(p1.x-p2.x,p1.y-p2.y)<14){stopDraw(true);return;}
   }
-
   drawPoints.push(e.latlng);
-
-  const isFirst = drawPoints.length === 1;
-  const icon = L.divIcon({
-    className: '',
-    html: `<div style="width:${isFirst?13:8}px;height:${isFirst?13:8}px;border-radius:50%;background:${isFirst?'#16a34a':'#1a3a5c'};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`,
-    iconSize: isFirst ? [13,13] : [8,8],
-    iconAnchor: isFirst ? [6,6] : [4,4]
-  });
-  drawMarkers.push(L.marker(e.latlng, { icon }).addTo(map));
-
-  if (drawPolyline) map.removeLayer(drawPolyline);
-  if (drawPoints.length > 1)
-    drawPolyline = L.polyline(drawPoints, { color:'#1a3a5c', weight:2, dashArray:'5,4', opacity:.7 }).addTo(map);
+  const isFirst=drawPoints.length===1;
+  const icon=L.divIcon({className:'',html:`<div style="width:${isFirst?13:8}px;height:${isFirst?13:8}px;border-radius:50%;background:${isFirst?'#16a34a':'#1a3a5c'};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.3)"></div>`,iconSize:isFirst?[13,13]:[8,8],iconAnchor:isFirst?[6,6]:[4,4]});
+  drawMarkers.push(L.marker(e.latlng,{icon}).addTo(map));
+  if(drawPolyline)map.removeLayer(drawPolyline);
+  if(drawPoints.length>1)drawPolyline=L.polyline(drawPoints,{color:'#1a3a5c',weight:2,dashArray:'5,4',opacity:.7}).addTo(map);
 });
 
 // ── ANALYSIS ──────────────────────────────────────────────────────────────────
-async function runAnalysis() {
-  if (!workPolygon) return;
+async function runAnalysis(){
+  if(!workPolygon)return;
   clearAutoLayers();
+  poiData=[];
+  const outerDist=parseInt(document.getElementById('outerDist').value);
+  const pts=workPolygon.getLatLngs()[0];
+  const centroid=getCentroid(pts);
 
-  const innerDist = parseInt(document.getElementById('innerDist').value);
-  const outerDist = parseInt(document.getElementById('outerDist').value);
-  const pts = workPolygon.getLatLngs()[0];
-  const centroid = getCentroid(pts);
-  const bounds = workPolygon.getBounds();
-
-  // Expand bbox slightly for queries
-  const pad = 0.002;
-  const bbox = `${bounds.getSouth()-pad},${bounds.getWest()-pad},${bounds.getNorth()+pad},${bounds.getEast()+pad}`;
-
-  // ── INNER ZONE: OSM blocks/buildings/landuse within innerDist ────────────────
-  loader(true, 'Hämtar angränsande kvarter…');
+  // ── INNER ZONE: buildings that actually intersect/touch work polygon ──────
+  loader(true,'Hämtar angränsande kvarter…');
   status('Hämtar kvarter från OpenStreetMap…');
 
-  const innerQuery = `
-    [out:json][timeout:25];
-    (
-      way[building](around:${innerDist},${centroid.lat},${centroid.lng});
-      way[landuse~"residential|commercial|retail|industrial|mixed"](around:${innerDist+50},${centroid.lat},${centroid.lng});
-      relation[landuse~"residential|commercial|retail"](around:${innerDist+50},${centroid.lat},${centroid.lng});
-      way[place~"block|islet"](around:${innerDist},${centroid.lat},${centroid.lng});
-    );
-    out geom;
-  `;
+  // Use a tight buffer (just 15m) to find truly adjacent buildings
+  const tightBuf=15;
+  const innerQuery=`[out:json][timeout:25];
+  (
+    way[building](around:${tightBuf},${pts.map(p=>p.lat+','+p.lng).join(' ')});
+    way[landuse~"residential|commercial|retail|industrial|mixed"](around:${tightBuf},${pts.map(p=>p.lat+','+p.lng).join(' ')});
+  );
+  out geom;`;
 
   let innerData;
-  try { innerData = await overpassPost(innerQuery); }
-  catch(e) { loader(false); status('Fel vid hämtning av kvarter.'); return; }
+  try{innerData=await overpassPost(innerQuery);}
+  catch(e){loader(false);status('Fel vid hämtning av kvarter.');return;}
 
-  // Render inner zone features
-  let innerCount = 0;
-  const innerGroup = L.layerGroup().addTo(map);
-
-  if (innerData.elements) {
-    innerData.elements.forEach(el => {
-      if (!el.geometry || el.geometry.length < 3) return;
-
-      // Check if within innerDist of work polygon
-      const elCenter = getGeomCentroid(el.geometry);
-      const distToWork = map.distance(elCenter, centroid);
-      if (distToWork > innerDist + 120) return; // rough filter
-
-      const latlngs = el.geometry.map(n => [n.lat, n.lon]);
-      const poly = L.polygon(latlngs, {
-        color: '#1a3a5c',
-        weight: 1,
-        fillColor: 'rgba(26,58,92,0.13)',
-        fillOpacity: 1,
-        dashArray: '5,3'
-      });
-
-      const tags = el.tags || {};
-      const label = tags.name || tags['addr:street'] || tags.landuse || tags.building || 'Kvarter';
-      poly.bindPopup(`<b>${label}</b><br><span style="font-size:11px;color:#6b6962">Inre zon – direkt påverkan</span>`);
-      poly.addTo(innerGroup);
+  let innerCount=0;
+  if(innerData.elements){
+    innerData.elements.forEach(el=>{
+      if(!el.geometry||el.geometry.length<3)return;
+      const latlngs=el.geometry.map(n=>[n.lat,n.lon]);
+      const tags=el.tags||{};
+      const label=tags.name||tags['addr:street']||(tags.landuse?'Landuse: '+tags.landuse:tags.building?'Byggnad':null)||'';
+      const poly=L.polygon(latlngs,{
+        color:'var(--inner-c)',
+        weight:1.5,
+        fillColor:'rgba(29,78,216,0.18)',
+        fillOpacity:1,
+      }).bindPopup(`<b>${label||'Angränsande byggnad'}</b><br><span style="font-size:11px;color:#6b6962">Inre zon – direkt påverkan</span>`);
+      poly.addTo(map);
+      autoLayers.push(poly);
       innerCount++;
     });
   }
-  autoLayers.push(innerGroup);
 
-  // ── OUTER ZONE: road network within outerDist via isochrone-style query ──────
-  loader(true, 'Hämtar vägnätverk för yttre zon…');
-  status('Analyserar vägnätet…');
-
-  // We fetch all road geometries within outerDist and build a convex-hull-like
-  // envelope from their endpoints, then subtract the inner area.
-  const outerQuery = `
-    [out:json][timeout:30];
-    (
-      way[highway~"primary|secondary|tertiary|residential|service|pedestrian|footway|cycleway|path|living_street|unclassified"](around:${outerDist},${centroid.lat},${centroid.lng});
-    );
-    out geom;
-  `;
+  // ── OUTER ZONE: road-network convex hull ──────────────────────────────────
+  loader(true,'Hämtar vägnät för yttre zon…');
+  const outerQuery=`[out:json][timeout:30];
+  (
+    way[highway~"primary|secondary|tertiary|residential|service|pedestrian|footway|cycleway|path|living_street|unclassified"](around:${outerDist},${centroid.lat},${centroid.lng});
+  );
+  out geom;`;
 
   let outerData;
-  try { outerData = await overpassPost(outerQuery); }
-  catch(e) { loader(false); status('Fel vid hämtning av vägnät.'); return; }
+  try{outerData=await overpassPost(outerQuery);}
+  catch(e){loader(false);status('Fel vid hämtning av vägnät.');return;}
 
-  // Collect all road endpoint coordinates within outerDist
-  const roadPoints = [];
-  if (outerData.elements) {
-    outerData.elements.forEach(el => {
-      if (!el.geometry) return;
-      el.geometry.forEach(node => {
-        const d = map.distance([node.lat, node.lon], centroid);
-        if (d <= outerDist) roadPoints.push([node.lat, node.lon]);
+  const roadPoints=[];
+  if(outerData.elements){
+    outerData.elements.forEach(el=>{
+      if(!el.geometry)return;
+      el.geometry.forEach(node=>{
+        if(map.distance([node.lat,node.lon],centroid)<=outerDist)
+          roadPoints.push([node.lat,node.lon]);
       });
     });
   }
-
-  if (roadPoints.length > 3) {
-    // Build convex hull from road endpoints
-    const hull = convexHull(roadPoints);
-
-    // Render outer zone (hull minus work polygon area visual)
-    const outerPoly = L.polygon(hull, {
-      color: '#b45309',
-      weight: 2,
-      fillColor: 'rgba(180,83,9,0.09)',
-      fillOpacity: 1,
-      dashArray: '9,5'
-    }).addTo(map).bindPopup(
-      `<b>Yttre påverkanszon</b><br>Vägnätsbuffert ${outerDist}m<br><span style="font-size:11px;color:#6b6962">Indirekt påverkan</span>`
-    );
+  if(roadPoints.length>3){
+    const hull=convexHull(roadPoints);
+    const outerPoly=L.polygon(hull,{
+      color:'#c2410c',weight:2.5,
+      fillColor:'rgba(194,65,12,0.10)',
+      fillOpacity:1,dashArray:'10,6'
+    }).addTo(map).bindPopup(`<b>Yttre påverkanszon</b><br>Nätverksbuffert ${outerDist}m<br><span style="font-size:11px;color:#6b6962">Indirekt påverkan</span>`);
     autoLayers.push(outerPoly);
-
-    // Bring work polygon and inner zone to front
-    if (workPolygon) workPolygon.bringToFront();
-    innerGroup.eachLayer(l => l.bringToFront && l.bringToFront());
   }
 
-  // Fit to outer zone
-  map.fitBounds(workPolygon.getBounds().pad(0.5));
+  // Bring work polygon and inner to front
+  if(workPolygon)workPolygon.bringToFront();
+
+  // ── POI ───────────────────────────────────────────────────────────────────
+  loader(true,'Hämtar målpunkter…');
+  await fetchPOIs(centroid,outerDist+60);
+
+  // Fit view
+  map.fitBounds(workPolygon.getBounds().pad(0.6));
+  if(workPolygon)workPolygon.bringToFront();
 
   loader(false);
-  status(`<b>Zoner genererade.</b><br>Inre zon: ${innerCount} kvarter/byggnader<br>Yttre zon: vägnätsbuffert ${outerDist}m`);
-  tip('Zoner klara! Nästa steg: POI och etiketter', 4000);
+  document.getElementById('exportBtn').disabled=false;
+  status(`<b>Analys klar.</b><br>Inre zon: ${innerCount} byggnader/kvarter<br>Yttre zon: nätverksbuffert ${outerDist}m<br>Målpunkter: ${poiData.length} st`);
+  tip(`Klart! ${poiData.length} målpunkter hittade`,4000);
 }
 
-// ── GEOMETRY HELPERS ──────────────────────────────────────────────────────────
-function getCentroid(latlngs) {
-  const n = latlngs.length;
-  const s = latlngs.reduce((a,ll) => ({lat:a.lat+ll.lat,lng:a.lng+ll.lng}), {lat:0,lng:0});
-  return L.latLng(s.lat/n, s.lng/n);
+// ── POI ───────────────────────────────────────────────────────────────────────
+const POI_CFG=[
+  {key:'school',    color:'#dc2626', label:'Skola/förskola',   impact:'hog'},
+  {key:'hospital',  color:'#1e40af', label:'Vård',             impact:'hog'},
+  {key:'shop',      color:'#9d174d', label:'Handel',           impact:'medel'},
+  {key:'transit',   color:'#5b21b6', label:'Kollektivtrafik',  impact:'hog'},
+  {key:'food',      color:'#065f46', label:'Café/restaurang',  impact:'medel'},
+  {key:'parking',   color:'#92400e', label:'Parkering',        impact:'medel'},
+  {key:'leisure',   color:'#4338ca', label:'Bibliotek/fritid', impact:'lag'},
+  {key:'hotel',     color:'#0891b2', label:'Hotell',           impact:'medel'},
+];
+
+function classifyPOI(t){
+  const a=t.amenity,s=t.shop,h=t.highway,r=t.railway,to=t.tourism;
+  if(a==='school'||a==='kindergarten')return POI_CFG[0];
+  if(a==='hospital'||a==='clinic'||a==='doctors'||a==='pharmacy')return POI_CFG[1];
+  if(s)return POI_CFG[2];
+  if(h==='bus_stop'||r==='tram_stop'||r==='station')return POI_CFG[3];
+  if(a==='cafe'||a==='restaurant'||a==='bar')return POI_CFG[4];
+  if(a==='parking')return POI_CFG[5];
+  if(a==='library'||a==='community_centre')return POI_CFG[6];
+  if(to==='hotel'||to==='hostel')return POI_CFG[7];
+  return null;
 }
 
-function getGeomCentroid(geom) {
-  const n = geom.length;
-  const s = geom.reduce((a,n) => ({lat:a.lat+n.lat,lng:a.lng+n.lon}), {lat:0,lng:0});
-  return L.latLng(s.lat/n, s.lng/n);
+async function fetchPOIs(center,radiusM){
+  const lat=center.lat,lon=center.lng,r=radiusM;
+  const q=`[out:json][timeout:25];
+  (
+    node[amenity=school](around:${r},${lat},${lon});
+    way[amenity=school](around:${r},${lat},${lon});
+    node[amenity=kindergarten](around:${r},${lat},${lon});
+    node[amenity=hospital](around:${r},${lat},${lon});
+    node[amenity=clinic](around:${r},${lat},${lon});
+    node[amenity=doctors](around:${r},${lat},${lon});
+    node[amenity=pharmacy](around:${r},${lat},${lon});
+    node[shop](around:${r},${lat},${lon});
+    node[shop=supermarket](around:${r},${lat},${lon});
+    node[highway=bus_stop](around:${r},${lat},${lon});
+    node[railway=tram_stop](around:${r},${lat},${lon});
+    node[railway=station](around:${r},${lat},${lon});
+    node[amenity=cafe](around:${r},${lat},${lon});
+    node[amenity=restaurant](around:${r},${lat},${lon});
+    node[amenity=parking](around:${r},${lat},${lon});
+    way[amenity=parking](around:${r},${lat},${lon});
+    node[amenity=library](around:${r},${lat},${lon});
+    node[amenity=community_centre](around:${r},${lat},${lon});
+    node[tourism=hotel](around:${r},${lat},${lon});
+  );
+  out center;`;
+
+  let data;
+  try{data=await overpassPost(q);}
+  catch(e){console.error('POI error',e);return;}
+  if(!data.elements)return;
+
+  const outerDist=parseInt(document.getElementById('outerDist').value);
+  const seen=new Set();
+
+  data.elements.forEach(el=>{
+    if(seen.has(el.id))return;seen.add(el.id);
+    const tags=el.tags||{};
+    const elLat=el.lat||(el.center&&el.center.lat);
+    const elLon=el.lon||(el.center&&el.center.lon);
+    if(!elLat||!elLon)return;
+    const cfg=classifyPOI(tags);
+    if(!cfg)return;
+
+    const name=tags.name||tags['name:sv']||cfg.label;
+    const latlng=L.latLng(elLat,elLon);
+    const dist=Math.round(map.distance(latlng,center));
+    const zone=dist<=80?'Inre zon':'Yttre zon';
+    const impact=zone==='Inre zon'?cfg.impact:(cfg.impact==='hog'?'medel':'lag');
+
+    // Dot marker
+    const icon=L.divIcon({
+      className:'',
+      html:`<div style="width:10px;height:10px;border-radius:50%;background:${cfg.color};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35)"></div>`,
+      iconSize:[10,10],iconAnchor:[5,5]
+    });
+    const marker=L.marker(latlng,{icon}).addTo(map);
+
+    // Label tooltip always visible
+    marker.bindTooltip(name,{
+      permanent:true,
+      direction:'right',
+      offset:[7,0],
+      className:'poi-label',
+    });
+
+    const bg=impact==='hog'?'#fef2f2':impact==='medel'?'#fffbeb':'#f0fdf4';
+    const fc=impact==='hog'?'#991b1b':impact==='medel'?'#92400e':'#14532d';
+    marker.bindPopup(`<div style="font-family:sans-serif;min-width:160px">
+      <b style="font-size:13px">${name}</b><br>
+      <span style="font-size:11px;color:#6b6962">${cfg.label}</span><br>
+      <span style="font-size:11px;color:#6b6962">${zone} · ${dist}m</span><br><br>
+      <span style="display:inline-block;padding:2px 8px;border-radius:999px;font-size:11px;font-weight:500;background:${bg};color:${fc}">Påverkan: ${{hog:'Hög',medel:'Medel',lag:'Låg'}[impact]}</span>
+    </div>`);
+
+    autoLayers.push(marker);
+    poiData.push({name,type:cfg.label,color:cfg.color,zone,dist,impact});
+  });
+
+  poiData.sort((a,b)=>a.dist-b.dist);
 }
 
-// Convex hull – Graham scan
-function convexHull(points) {
-  if (points.length < 3) return points;
-  points = points.map(p => ({x:p[1],y:p[0]})); // lng,lat → x,y
-  points.sort((a,b) => a.x===b.x ? a.y-b.y : a.x-b.x);
-  const cross = (o,a,b) => (a.x-o.x)*(b.y-o.y)-(a.y-o.y)*(b.x-o.x);
-  const lower = [], upper = [];
-  for (const p of points) {
-    while (lower.length>=2 && cross(lower[lower.length-2],lower[lower.length-1],p)<=0) lower.pop();
-    lower.push(p);
-  }
-  for (let i=points.length-1;i>=0;i--) {
-    const p=points[i];
-    while (upper.length>=2 && cross(upper[upper.length-2],upper[upper.length-1],p)<=0) upper.pop();
-    upper.push(p);
-  }
-  upper.pop(); lower.pop();
-  return [...lower,...upper].map(p => [p.y, p.x]); // back to [lat,lng]
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function exportMap(){
+  const IMP={hog:'Hög',medel:'Medel',lag:'Låg'};
+  const tbody=document.getElementById('expTableBody');
+  tbody.innerHTML=poiData.map((p,i)=>{
+    const bg=p.impact==='hog'?'#fef2f2':p.impact==='medel'?'#fffbeb':'#f0fdf4';
+    const fc=p.impact==='hog'?'#991b1b':p.impact==='medel'?'#92400e':'#14532d';
+    return `<tr style="border-bottom:1px solid #e2e0d8">
+      <td style="padding:5px 8px;color:#6b6962">${i+1}</td>
+      <td style="padding:5px 8px;display:flex;align-items:center;gap:6px"><span style="width:7px;height:7px;border-radius:50%;background:${p.color};display:inline-block;flex-shrink:0"></span>${p.name}</td>
+      <td style="padding:5px 8px">${p.type}</td>
+      <td style="padding:5px 8px">${p.zone}</td>
+      <td style="padding:5px 8px;font-family:monospace;font-size:11px">${p.dist}m</td>
+      <td style="padding:5px 8px"><span style="display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:500;background:${bg};color:${fc}">${IMP[p.impact]}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('expOverlay').style.display='flex';
+}
+function closeExport(){document.getElementById('expOverlay').style.display='none';}
+function doPrint(){window.print();}
+function copyPoiText(){
+  const IMP={hog:'Hög',medel:'Medel',lag:'Låg'};
+  const txt=poiData.map((p,i)=>`${i+1}. ${p.name} – ${p.type} – ${p.zone} (${p.dist}m) – Påverkan: ${IMP[p.impact]}`).join('\n');
+  navigator.clipboard.writeText(txt).then(()=>{closeExport();tip('Kopierat!',2000);});
 }
 
 // ── RESET ─────────────────────────────────────────────────────────────────────
-function clearAutoLayers() {
-  autoLayers.forEach(l => map.removeLayer(l));
-  autoLayers = [];
-}
-
-function resetAll() {
+function clearAutoLayers(){autoLayers.forEach(l=>map.removeLayer(l));autoLayers=[];}
+function resetAll(){
   clearAutoLayers();
-  if (workPolygon) { map.removeLayer(workPolygon); workPolygon = null; }
-  drawMarkers.forEach(m => map.removeLayer(m)); drawMarkers = [];
-  if (drawPolyline) { map.removeLayer(drawPolyline); drawPolyline = null; }
-  drawPoints = []; drawing = false;
-  map.dragging.enable();
-  map.getContainer().style.cursor = '';
+  if(workPolygon){map.removeLayer(workPolygon);workPolygon=null;}
+  drawMarkers.forEach(m=>map.removeLayer(m));drawMarkers=[];
+  if(drawPolyline){map.removeLayer(drawPolyline);drawPolyline=null;}
+  drawPoints=[];drawing=false;poiData=[];
+  map.dragging.enable();map.getContainer().style.cursor='';
   document.getElementById('drawBtn').classList.remove('active');
-  document.getElementById('drawBtnLabel').textContent = 'Starta ritning';
-  document.getElementById('analyzeBtn').disabled = true;
+  document.getElementById('drawBtnLabel').textContent='Starta ritning';
+  document.getElementById('analyzeBtn').disabled=true;
+  document.getElementById('exportBtn').disabled=true;
   setStep(1);
   status('Rita arbetsområdet för att komma igång.');
-  tip('Börjar om', 2000);
+  tip('Börjar om',2000);
 }
+
+// init
+updateOuterLabel();
 </script>
 </body>
 </html>
