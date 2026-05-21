@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MM-analys – Påverkansområden</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e2e0d8;
+    --text: #1a1917;
+    --text-muted: #6b6962;
+    --accent: #1a3a5c;
+    --byggomrade-c: #1a3a5c; --byggomrade-f: rgba(26,58,92,0.18);
+    --yttre-c: #b45309;     --yttre-f: rgba(180,83,9,0.13);
+    --fotgangare-c: #166534; --fotgangare-f: rgba(22,101,52,0.15);
+    --koll-c: #5b21b6;      --koll-f: rgba(91,33,182,0.13);
+    --naringsliv-c: #9d174d; --naringsliv-f: rgba(157,23,77,0.13);
+    --boende-c: #065f46;    --boende-f: rgba(6,95,70,0.13);
+    --skola-c: #92400e;     --skola-f: rgba(146,64,14,0.13);
+    --vard-c: #1e40af;      --vard-f: rgba(30,64,175,0.13);
+    --ovrigt-c: #374151;    --ovrigt-f: rgba(55,65,81,0.10);
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    background: var(--accent);
+    color: #fff;
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border-bottom: 2px solid rgba(255,255,255,0.08);
+  }
+  header h1 {
+    font-size: 16px;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  header span {
+    font-size: 13px;
+    opacity: 0.6;
+    font-family: 'DM Mono', monospace;
+  }
+  .header-right {
+    margin-left: auto;
+    display: flex;
+    gap: 8px;
+  }
+
+  .layout {
+    display: flex;
+    flex: 1;
+    height: calc(100vh - 52px);
+  }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    min-width: 260px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .sidebar-section {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sidebar-section h2 {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+
+  .mode-btns { display: flex; flex-direction: column; gap: 6px; }
+  .mode-btn {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .mode-btn:hover { background: #eeede9; }
+  .mode-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .mode-btn svg { flex-shrink: 0; opacity: 0.7; }
+  .mode-btn.active svg { opacity: 1; }
+
+  .cat-list { display: flex; flex-direction: column; gap: 4px; }
+  .cat-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.12s;
+  }
+  .cat-item:hover { background: var(--bg); }
+  .cat-item.active { border-color: currentColor; background: var(--bg); font-weight: 500; }
+  .cat-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+  .impact-row { display: flex; gap: 6px; }
+  .impact-btn {
+    flex: 1; padding: 7px 4px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    font-size: 12px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.12s; text-align: center;
+  }
+  .impact-btn:hover { background: #eeede9; }
+  .impact-btn.active-hog  { background: #fef2f2; border-color: #dc2626; color: #991b1b; font-weight: 500; }
+  .impact-btn.active-medel { background: #fffbeb; border-color: #d97706; color: #92400e; font-weight: 500; }
+  .impact-btn.active-lag  { background: #f0fdf4; border-color: #16a34a; color: #14532d; font-weight: 500; }
+
+  .element-list { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+  .el-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .el-item:hover { background: #eeede9; }
+  .el-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .el-name { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .el-type { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text-muted); }
+  .el-del { margin-left: auto; color: var(--text-muted); font-size: 16px; line-height: 1; background: none; border: none; cursor: pointer; padding: 0 2px; }
+  .el-del:hover { color: #dc2626; }
+
+  .empty-state {
+    padding: 20px 10px; text-align: center;
+    font-size: 12px; color: var(--text-muted); line-height: 1.6;
+  }
+
+  /* Map */
+  #map { flex: 1; }
+
+  /* Status bar */
+  .statusbar {
+    position: absolute;
+    bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--accent);
+    color: #fff;
+    padding: 8px 18px;
+    border-radius: 999px;
+    font-size: 13px;
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 1;
+    transition: opacity 0.3s;
+    white-space: nowrap;
+    max-width: 90vw;
+    text-align: center;
+  }
+  .statusbar.hidden { opacity: 0; }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 8px;
+    font-size: 13px; font-family: 'DM Sans', sans-serif;
+    cursor: pointer; transition: all 0.15s;
+    border: 1px solid rgba(255,255,255,0.2);
+    background: rgba(255,255,255,0.1); color: #fff;
+  }
+  .btn:hover { background: rgba(255,255,255,0.2); }
+  .btn-danger { background: rgba(220,38,38,0.15); border-color: rgba(220,38,38,0.3); }
+  .btn-danger:hover { background: rgba(220,38,38,0.25); }
+
+  /* Export panel */
+  #exportPanel {
+    display: none;
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(26,26,24,0.55);
+    z-index: 2000;
+    align-items: center; justify-content: center;
+  }
+  #exportPanel.open { display: flex; }
+  .export-modal {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    width: 560px; max-width: 95vw;
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .export-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .export-header h2 { font-size: 15px; font-weight: 500; }
+  .export-body { padding: 20px; overflow-y: auto; flex: 1; }
+  .export-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .export-table th { text-align: left; padding: 6px 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  .export-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .impact-pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 500; }
+  .pill-hog  { background: #fef2f2; color: #991b1b; }
+  .pill-medel { background: #fffbeb; color: #92400e; }
+  .pill-lag  { background: #f0fdf4; color: #14532d; }
+  .export-footer { padding: 14px 20px; border-top: 1px solid var(--border); display: flex; gap: 8px; justify-content: flex-end; }
+  .btn-primary { background: var(--accent); color: #fff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13px; font-family: 'DM Sans',sans-serif; cursor: pointer; }
+  .btn-secondary { background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 8px; font-size: 13px; font-family: 'DM Sans',sans-serif; cursor: pointer; }
+
+  .map-wrap { flex: 1; position: relative; }
+
+  /* Search box */
+  .search-bar {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    z-index: 1000; display: flex; gap: 0; width: 320px; max-width: 90%;
+  }
+  .search-bar input {
+    flex: 1; padding: 8px 14px; border-radius: 8px 0 0 8px;
+    border: 1px solid var(--border); border-right: none;
+    font-size: 13px; font-family: 'DM Sans',sans-serif;
+    background: var(--surface); color: var(--text);
+    outline: none;
+  }
+  .search-bar button {
+    padding: 8px 14px; border-radius: 0 8px 8px 0;
+    border: 1px solid var(--border);
+    background: var(--accent); color: #fff;
+    font-size: 13px; font-family: 'DM Sans',sans-serif;
+    cursor: pointer;
+  }
+
+  @media (max-width: 640px) {
+    .sidebar { width: 200px; min-width: 200px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 13l4.553 2.276A1 1 0 0021 21.382V10.618a1 1 0 00-.553-.894L15 7m0 13V7m0 0L9 4"/></svg>
+  <h1>MM-analys – Påverkansområden</h1>
+  <span>Mobility Management i byggskedet</span>
+  <div class="header-right">
+    <button class="btn" onclick="undoLast()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6"/></svg>
+      Ångra
+    </button>
+    <button class="btn" onclick="openExport()">
+      <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      Exportera analys
+    </button>
+  </div>
+</header>
+
+<div class="layout">
+
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <h2>Ritläge</h2>
+      <div class="mode-btns">
+        <button class="mode-btn active" id="btn-polygon" onclick="setMode('polygon')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          Rita zon
+        </button>
+        <button class="mode-btn" id="btn-marker" onclick="setMode('marker')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          Markera punkt
+        </button>
+        <button class="mode-btn" id="btn-view" onclick="setMode('view')">
+          <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M15 10l-4 4m0 0L7 10m4 4V3M3 17v2a2 2 0 002 2h14a2 2 0 002-2v-2"/></svg>
+          Navigera
+        </button>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h2>Kategori</h2>
+      <div class="cat-list" id="catList">
+        <div class="cat-item active" data-cat="byggomrade" style="color:var(--byggomrade-c)" onclick="selectCat(this,'byggomrade')">
+          <div class="cat-dot" style="background:var(--byggomrade-c)"></div>Byggområde (kärna)
+        </div>
+        <div class="cat-item" data-cat="yttre" style="color:var(--yttre-c)" onclick="selectCat(this,'yttre')">
+          <div class="cat-dot" style="background:var(--yttre-c)"></div>Yttre påverkanszon
+        </div>
+        <div class="cat-item" data-cat="fotgangare" style="color:var(--fotgangare-c)" onclick="selectCat(this,'fotgangare')">
+          <div class="cat-dot" style="background:var(--fotgangare-c)"></div>Gång/cykel
+        </div>
+        <div class="cat-item" data-cat="koll" style="color:var(--koll-c)" onclick="selectCat(this,'koll')">
+          <div class="cat-dot" style="background:var(--koll-c)"></div>Kollektivtrafik
+        </div>
+        <div class="cat-item" data-cat="naringsliv" style="color:var(--naringsliv-c)" onclick="selectCat(this,'naringsliv')">
+          <div class="cat-dot" style="background:var(--naringsliv-c)"></div>Näringsliv/handel
+        </div>
+        <div class="cat-item" data-cat="boende" style="color:var(--boende-c)" onclick="selectCat(this,'boende')">
+          <div class="cat-dot" style="background:var(--boende-c)"></div>Boende
+        </div>
+        <div class="cat-item" data-cat="skola" style="color:var(--skola-c)" onclick="selectCat(this,'skola')">
+          <div class="cat-dot" style="background:var(--skola-c)"></div>Skola/förskola
+        </div>
+        <div class="cat-item" data-cat="vard" style="color:var(--vard-c)" onclick="selectCat(this,'vard')">
+          <div class="cat-dot" style="background:var(--vard-c)"></div>Vård
+        </div>
+        <div class="cat-item" data-cat="ovrigt" style="color:var(--ovrigt-c)" onclick="selectCat(this,'ovrigt')">
+          <div class="cat-dot" style="background:var(--ovrigt-c)"></div>Övrigt
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <h2>Påverkansgrad</h2>
+      <div class="impact-row">
+        <button class="impact-btn active-hog" id="imp-hog" onclick="selectImpact('hog')">Hög</button>
+        <button class="impact-btn" id="imp-medel" onclick="selectImpact('medel')">Medel</button>
+        <button class="impact-btn" id="imp-lag" onclick="selectImpact('lag')">Låg</button>
+      </div>
+    </div>
+
+    <div class="sidebar-section" style="flex:1">
+      <h2>Tillagda element (<span id="elCount">0</span>)</h2>
+      <div class="element-list" id="elementList">
+        <div class="empty-state">Rita zoner eller markera punkter på kartan för att bygga upp din påverkansanalys.</div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="map-wrap">
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Sök adress eller plats…" onkeydown="if(event.key==='Enter')doSearch()" />
+      <button onclick="doSearch()">Sök</button>
+    </div>
+    <div id="map"></div>
+    <div class="statusbar hidden" id="statusBar"></div>
+  </div>
+
+</div>
+
+<!-- Export panel -->
+<div id="exportPanel">
+  <div class="export-modal">
+    <div class="export-header">
+      <h2>Påverkansanalys – exportera</h2>
+      <button class="btn-secondary" style="padding:4px 10px;font-size:12px" onclick="closeExport()">Stäng</button>
+    </div>
+    <div class="export-body">
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:14px">Sammanställning av kartlagda påverkansområden och målpunkter (MM-analys steg 1 & 2).</p>
+      <div id="exportContent"></div>
+    </div>
+    <div class="export-footer">
+      <button class="btn-secondary" onclick="copyText()">Kopiera text</button>
+      <button class="btn-primary" onclick="printExport()">Skriv ut / Spara PDF</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const CAT = {
+  byggomrade: { label:'Byggområde (kärna)',   color:'#1a3a5c', fill:'rgba(26,58,92,0.18)' },
+  yttre:      { label:'Yttre påverkanszon',   color:'#b45309', fill:'rgba(180,83,9,0.13)' },
+  fotgangare: { label:'Gång/cykel',           color:'#166534', fill:'rgba(22,101,52,0.15)' },
+  koll:       { label:'Kollektivtrafik',      color:'#5b21b6', fill:'rgba(91,33,182,0.13)' },
+  naringsliv: { label:'Näringsliv/handel',    color:'#9d174d', fill:'rgba(157,23,77,0.13)' },
+  boende:     { label:'Boende',               color:'#065f46', fill:'rgba(6,95,70,0.13)' },
+  skola:      { label:'Skola/förskola',       color:'#92400e', fill:'rgba(146,64,14,0.13)' },
+  vard:       { label:'Vård',                 color:'#1e40af', fill:'rgba(30,64,175,0.13)' },
+  ovrigt:     { label:'Övrigt',               color:'#374151', fill:'rgba(55,65,81,0.10)' },
+};
+
+const IMPACT_LABEL = { hog:'Hög', medel:'Medel', lag:'Låg' };
+
+let map, mode = 'polygon', currentCat = 'byggomrade', currentImpact = 'hog';
+let elements = [];
+let polyPoints = [], tempPolyline = null;
+let statusTimer = null;
+
+// Init map – Kilsgatan, Göteborg
+map = L.map('map', { doubleClickZoom: false }).setView([57.7028, 11.9671], 16);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 19
+}).addTo(map);
+
+map.dragging.disable();
+
+function showStatus(msg, dur) {
+  const bar = document.getElementById('statusBar');
+  bar.textContent = msg;
+  bar.classList.remove('hidden');
+  if (statusTimer) clearTimeout(statusTimer);
+  if (dur) statusTimer = setTimeout(() => bar.classList.add('hidden'), dur);
+}
+
+function setMode(m) {
+  mode = m;
+  cancelDrawing();
+  ['polygon','marker','view'].forEach(n => document.getElementById('btn-'+n).classList.remove('active'));
+  document.getElementById('btn-'+m).classList.add('active');
+  if (m === 'view') {
+    map.dragging.enable();
+    showStatus('Navigationläge – dra kartan fritt', 2500);
+  } else {
+    map.dragging.disable();
+    if (m === 'polygon') showStatus('Klicka för att rita zon – dubbelklicka på sista punkten för att avsluta');
+    if (m === 'marker') showStatus('Klicka för att placera en målpunkt');
+  }
+}
+
+function selectCat(el, cat) {
+  currentCat = cat;
+  document.querySelectorAll('.cat-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function selectImpact(imp) {
+  currentImpact = imp;
+  ['hog','medel','lag'].forEach(i => {
+    const b = document.getElementById('imp-'+i);
+    b.className = 'impact-btn';
+    if (i === imp) b.classList.add('active-'+i);
+  });
+}
+
+function cancelDrawing() {
+  polyPoints = [];
+  if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
+}
+
+map.on('click', function(e) {
+  if (mode === 'view') return;
+  if (mode === 'marker') {
+    const name = prompt('Namn på målpunkt:', CAT[currentCat].label) || CAT[currentCat].label;
+    addMarker(e.latlng, name);
+    return;
+  }
+  if (mode === 'polygon') {
+    polyPoints.push(e.latlng);
+    refreshTempLine();
+    if (polyPoints.length === 1) showStatus('Fortsätt klicka – dubbelklicka för att avsluta zonen');
+  }
+});
+
+map.on('dblclick', function(e) {
+  if (mode !== 'polygon' || polyPoints.length < 2) return;
+  polyPoints.push(e.latlng);
+  if (tempPolyline) { map.removeLayer(tempPolyline); tempPolyline = null; }
+  const name = prompt('Namn på zonen:', CAT[currentCat].label) || CAT[currentCat].label;
+  addPolygon([...polyPoints], name);
+  polyPoints = [];
+  showStatus(name + ' tillagd', 2000);
+});
+
+function refreshTempLine() {
+  if (tempPolyline) map.removeLayer(tempPolyline);
+  if (polyPoints.length > 1) {
+    tempPolyline = L.polyline(polyPoints, { color: CAT[currentCat].color, dashArray:'6,4', weight: 1.5, opacity: 0.7 }).addTo(map);
+  }
+}
+
+function addPolygon(pts, name) {
+  const c = CAT[currentCat];
+  const layer = L.polygon(pts, { color: c.color, fillColor: c.fill, fillOpacity: 1, weight: 2 })
+    .addTo(map)
+    .bindPopup(popupHTML(name, currentCat, currentImpact));
+  pushElement({ type:'polygon', layer, cat: currentCat, impact: currentImpact, name });
+}
+
+function addMarker(latlng, name) {
+  const c = CAT[currentCat];
+  const icon = L.divIcon({
+    className: '',
+    html: `<div style="width:14px;height:14px;border-radius:50%;background:${c.color};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,0.3)"></div>`,
+    iconSize: [14,14], iconAnchor: [7,7]
+  });
+  const layer = L.marker(latlng, { icon })
+    .addTo(map)
+    .bindPopup(popupHTML(name, currentCat, currentImpact));
+  pushElement({ type:'marker', layer, cat: currentCat, impact: currentImpact, name });
+  showStatus(name + ' tillagd', 2000);
+}
+
+function popupHTML(name, cat, impact) {
+  const pillCls = impact === 'hog' ? 'pill-hog' : impact === 'medel' ? 'pill-medel' : 'pill-lag';
+  return `<div style="font-family:'DM Sans',sans-serif;min-width:160px">
+    <div style="font-weight:500;font-size:14px;margin-bottom:4px">${name}</div>
+    <div style="font-size:12px;color:#6b6962;margin-bottom:6px">${CAT[cat].label}</div>
+    <span class="impact-pill ${pillCls}">Påverkan: ${IMPACT_LABEL[impact]}</span>
+  </div>`;
+}
+
+function pushElement(el) {
+  elements.push(el);
+  renderList();
+}
+
+function undoLast() {
+  if (polyPoints.length > 0) { cancelDrawing(); showStatus('Ritning avbruten', 1500); return; }
+  if (elements.length === 0) return;
+  const last = elements.pop();
+  map.removeLayer(last.layer);
+  renderList();
+  showStatus('Sista elementet borttaget', 1500);
+}
+
+function deleteElement(i) {
+  map.removeLayer(elements[i].layer);
+  elements.splice(i, 1);
+  renderList();
+}
+
+function renderList() {
+  const list = document.getElementById('elementList');
+  document.getElementById('elCount').textContent = elements.length;
+  if (elements.length === 0) {
+    list.innerHTML = '<div class="empty-state">Rita zoner eller markera punkter på kartan.</div>';
+    return;
+  }
+  list.innerHTML = elements.map((el, i) => `
+    <div class="el-item">
+      <div class="el-dot" style="background:${CAT[el.cat].color}"></div>
+      <span class="el-name">${el.name}</span>
+      <span class="el-type">${el.impact === 'hog' ? '🔴' : el.impact === 'medel' ? '🟡' : '🟢'}</span>
+      <button class="el-del" onclick="deleteElement(${i})" title="Ta bort">×</button>
+    </div>`).join('');
+}
+
+async function doSearch() {
+  const q = document.getElementById('searchInput').value.trim();
+  if (!q) return;
+  showStatus('Söker…');
+  try {
+    const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&countrycodes=se`);
+    const data = await res.json();
+    if (data.length === 0) { showStatus('Inga resultat hittades', 2500); return; }
+    map.setView([parseFloat(data[0].lat), parseFloat(data[0].lon)], 16);
+    showStatus(data[0].display_name.split(',').slice(0,2).join(', '), 2500);
+  } catch(e) {
+    showStatus('Sökning misslyckades', 2000);
+  }
+}
+
+function openExport() {
+  if (elements.length === 0) { alert('Lägg till element på kartan innan du exporterar.'); return; }
+  const rows = elements.map((el, i) => {
+    const pillCls = el.impact === 'hog' ? 'pill-hog' : el.impact === 'medel' ? 'pill-medel' : 'pill-lag';
+    return `<tr>
+      <td>${i+1}</td>
+      <td><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${CAT[el.cat].color};display:inline-block"></span>${el.name}</span></td>
+      <td>${CAT[el.cat].label}</td>
+      <td>${el.type === 'polygon' ? 'Zon' : 'Punkt'}</td>
+      <td><span class="impact-pill ${pillCls}">${IMPACT_LABEL[el.impact]}</span></td>
+    </tr>`;
+  }).join('');
+  document.getElementById('exportContent').innerHTML = `
+    <table class="export-table">
+      <thead><tr><th>#</th><th>Namn</th><th>Kategori</th><th>Typ</th><th>Påverkan</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+  document.getElementById('exportPanel').classList.add('open');
+}
+
+function closeExport() { document.getElementById('exportPanel').classList.remove('open'); }
+
+function copyText() {
+  const lines = elements.map((el,i) => `${i+1}. ${el.name} – ${CAT[el.cat].label} (${el.type === 'polygon' ? 'zon' : 'punkt'}) – Påverkan: ${IMPACT_LABEL[el.impact]}`);
+  navigator.clipboard.writeText(lines.join('\n')).then(() => { closeExport(); showStatus('Kopierat till urklipp', 2000); });
+}
+
+function printExport() { window.print(); }
+
+showStatus('Karta laddad – välj kategori och börja rita', 3000);
+</script>
+</body>
+</html>
