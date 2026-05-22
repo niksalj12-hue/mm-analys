@@ -402,29 +402,59 @@ async function runAnalysis(){
   try{innerData=await overpassPost(innerQuery);}
   catch(e){loader(false);status('Fel vid hämtning av kvarter.');return;}
 
+  // Render individual OSM block/landuse polygons with unified fill – organic block-following shape
   let innerCount=0;
+  const allInnerPts=[...pts.map(p=>[p.lat,p.lng])]; // start with work polygon pts
+
+  // First pass: collect all points for outer stroke hull
   if(innerData.elements){
     innerData.elements.forEach(el=>{
       if(!el.geometry||el.geometry.length<3)return;
-      const latlngs=el.geometry.map(n=>[n.lat,n.lon]);
-      // Filter: centroid of element must be within innerDist of work polygon centroid
-      const elC = latlngs.reduce((a,ll)=>({lat:a.lat+ll[0],lng:a.lng+ll[1]}),{lat:0,lng:0});
-      const elCentroid = L.latLng(elC.lat/latlngs.length, elC.lng/latlngs.length);
-      if(map.distance(elCentroid, centroid) > innerDist + 80) return;
-      const tags=el.tags||{};
-      const label=tags.name||tags['addr:street']||(tags.landuse&&tags.landuse!='yes'?tags.landuse:null)||(tags.building&&tags.building!='yes'?tags.building:null)||'Byggnad';
+      const nodes=el.geometry;
+      const eLat=nodes.reduce((s,n)=>s+n.lat,0)/nodes.length;
+      const eLon=nodes.reduce((s,n)=>s+n.lon,0)/nodes.length;
+      if(map.distance(L.latLng(eLat,eLon),centroid)>innerDist+80)return;
+      nodes.forEach(n=>allInnerPts.push([n.lat,n.lon]));
+    });
+  }
+
+  // Draw each block polygon with same fill (no stroke) so they visually merge
+  if(innerData.elements){
+    innerData.elements.forEach(el=>{
+      if(!el.geometry||el.geometry.length<3)return;
+      const nodes=el.geometry;
+      const eLat=nodes.reduce((s,n)=>s+n.lat,0)/nodes.length;
+      const eLon=nodes.reduce((s,n)=>s+n.lon,0)/nodes.length;
+      if(map.distance(L.latLng(eLat,eLon),centroid)>innerDist+80)return;
+      const latlngs=nodes.map(n=>[n.lat,n.lon]);
       const poly=L.polygon(latlngs,{
-        color:'#1d4ed8',
-        weight:1.5,
-        fillColor:'rgba(29,78,216,0.18)',
+        color:'rgba(29,78,216,0)',   // no individual stroke → fills merge visually
+        weight:0,
+        fillColor:'rgba(29,78,216,0.20)',
         fillOpacity:1,
-      }).bindPopup('<b>'+label+'</b><br><span style="font-size:11px;color:#6b6962">Inre zon – direkt påverkan</span>');
-      poly.addTo(map);
+      }).addTo(map);
       autoLayers.push(poly);
       innerCount++;
     });
   }
-  console.log('Inner zone features:', innerCount);
+
+  // Always fill the work polygon itself
+  const workFill=L.polygon(pts.map(p=>[p.lat,p.lng]),{
+    color:'rgba(29,78,216,0)',weight:0,
+    fillColor:'rgba(29,78,216,0.20)',fillOpacity:1
+  }).addTo(map);
+  autoLayers.push(workFill);
+
+  // Draw one clean outer stroke around all collected points using convex hull
+  if(allInnerPts.length>=3){
+    const innerStroke=L.polygon(convexHull(allInnerPts),{
+      color:'#1d4ed8',weight:2.5,
+      fill:false,
+      dashArray:'6,4'
+    }).addTo(map).bindPopup('<b>Inre påverkanszon</b><br>Angränsande kvarter inom '+innerDist+'m<br><span style="font-size:11px;color:#6b6962">Direkt påverkan</span>');
+    autoLayers.push(innerStroke);
+  }
+  console.log('Inner zone blocks:', innerCount);
 
   // ── OUTER ZONE: road-network convex hull ──────────────────────────────────
   loader(true,'Hämtar vägnät för yttre zon…');
